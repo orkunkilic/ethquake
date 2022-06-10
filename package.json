@@ -29,6 +29,7 @@
   },
   "dependencies": {
     "axios": "^0.27.2",
-    "dotenv": "^16.0.1"
+    "dotenv": "^16.0.1",
+    "lowdb": "^3.0.0"
   }
 }
