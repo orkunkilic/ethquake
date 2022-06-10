@@ -14,6 +14,9 @@ contract Pool is Ownable {
     uint8 entranceFeePerc;
     uint256 noOfHouses;
     uint8 inspectorPerCity;
+    uint256 startTime;
+    uint256 tokenSaleStart;
+    bool canBuyTokens;
 
     mapping(uint256 => ClaimRequest) public claimRequests; // houseId -> Claim Request
     mapping(uint256 => address[]) internal zipCodeToInspectors;
@@ -26,6 +29,7 @@ contract Pool is Ownable {
         maxPoolRisk = _maxPoolRisk;
         entranceFeePerc = _entranceFeePerc;
         inspectorPerCity = _inspectorPerCity; 
+        startTime = block.timestamp;
     }
 
     event RequestVotingEnded(uint8 grants, uint8 denies);
@@ -43,19 +47,26 @@ contract Pool is Ownable {
         uint8 denyVotes;
     }
 
-    function enterPool(uint8 houseRisk, uint256 housePrice) external payable{
-        require(canEnterPool(houseRisk, housePrice));
+    function enterPool(uint256 houseId) external payable{
+        require((block.timestamp - startTime) <= 30 days, "Insurance period has ended");
+        require(canEnterPool(houseId));
         noOfHouses++;
     }
 
-    function canEnterPool(uint8 houseRisk, uint256 housePrice) internal returns(bool){
+    function canEnterPool(uint256 houseId) internal returns(bool){
+        address houseOwner = nftCtc.ownerOf(houseId);
+        require(msg.sender == houseOwner, "You are not the owner of this house");
+        uint8 houseRisk = nftCtc.getRisk(houseId);
+        uint256 housePrice = nftCtc.getPrice(houseId);
+        uint8 noOfInspectors = nftCtc.getInspectors(houseId);
+        require(noOfInspectors >= 3, "Not enough inspectors");
         require(houseRisk >= minPoolRisk && houseRisk <= maxPoolRisk, "House risk out of pool's boundaries");
         uint256 entranceFee = calcEntranceFee(housePrice);
         require(msg.value >= entranceFee);
         return true;
     }
 
-    function calcEntranceFee(uint256 housePrice) public returns(uint256){
+    function calcEntranceFee(uint256 housePrice) public view returns(uint256){
         return housePrice * uint256(entranceFeePerc);
     }
 
@@ -100,6 +111,7 @@ contract Pool is Ownable {
     }
 
     function buyPoolPartially(uint8 percentage) external payable{
+        require(canBuyTokens);
         uint256 price =  calculateTokenPrice(percentage, address(this).balance);
         require(msg.value == price, "Inadequate money for the percentage");
         tokenCtc.transferFrom(address(tokenCtc), msg.sender, percentage);
@@ -116,6 +128,12 @@ contract Pool is Ownable {
 
     function calculateTokenPrice(uint8 percantage, uint256 poolVolume) internal returns(uint256){
         return 100;
+    }
+
+    function startTokenSale() external onlyOwner {
+        require(block.timestamp - startTime >= 30 days, "Insurance period hasnt ended yet");
+        canBuyTokens = true;
+        tokenSaleStart = block.timestamp;
     }
 
 }
