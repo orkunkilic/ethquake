@@ -3,6 +3,7 @@ import { ethers } from "ethers"
 //import data from "../abis/"
 import nftCtcData from "../abis/nft.json"
 import { Button, Input, Text } from "@geist-ui/core"
+import axios from "axios"
 
 const nftAddr = ""
 const provider = new ethers.providers.Web3Provider(window.ethereum)
@@ -28,6 +29,7 @@ const IssuePage = () => {
             }
         )
         console.log(res)
+        showPopup("Success!!")
     }
 
     const showPopup = async (text) => {
@@ -48,7 +50,7 @@ const IssuePage = () => {
             }}>
                 <Input placeholder="Global Address Id" value={addressId} onChange={(e) => setAddressId(e.target.value)}/>
                 <Input mt={1} placeholder="ZIP Code" value={zipCode} onChange={(e) => setZipCode(e.target.value)}/>
-                <Button onClick={issue}>Issue Deed NFT</Button>
+                <Button type="success" mt={1} onClick={issue}>Issue Deed NFT</Button>
             </div>
             
         </div>
