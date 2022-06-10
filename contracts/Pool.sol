@@ -53,7 +53,7 @@ contract Pool is Ownable {
         entranceFeePerc = _entranceFeePerc;
         inspectorPerCity = _inspectorPerCity; 
         startTime = block.timestamp;
-        stakeCtc = _stakeCtc;;
+        stakeCtc = _stakeCtc;
     }
 
     event RequestVotingEnded(uint8 grants, uint8 denies);
