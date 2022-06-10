@@ -1,12 +1,14 @@
 // SPDX-License-Identifier: MIT
 
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/ownership/Ownable.sol";
 
 pragma solidity ^0.8.0;
 
 contract Pool is Ownable {
     IERC721 nftCtc;
+    IERC20 tokenCtc;
     uint8 minPoolRisk;
     uint8 maxPoolRisk;
     uint8 entranceFeePerc;
@@ -17,17 +19,17 @@ contract Pool is Ownable {
     mapping(uint256 => ClaimRequest) public claimRequests; // houseId -> Claim Request
     mapping(uint256 => address[]) internal zipCodeToInspectors;
 
-    constructor(IERC721 _nftCtc, uint8 _minPoolRisk, uint8 _maxPoolRisk, uint8 _entranceFeePerc, _inspectorPerCity){
+    constructor(IERC721 _nftCtc, IERC20 _tokenCtc, uint8 _minPoolRisk, uint8 _maxPoolRisk, 
+    uint8 _entranceFeePerc, _inspectorPerCity){
         nftCtc = _nftCtc;
+        tokenCtc = _tokenCtc;
         minPoolRisk = _minPoolRisk;
         maxPoolRisk = _maxPoolRisk;
         entranceFeePerc = _entranceFeePerc;
         inspectorPerCity = _inspectorPerCity; 
     }
 
-    modifier onlyInspector{
-
-    }
+    event RequestVotingEnded(uint8 grants, uint8 denies);
 
     enum RequestStatus{
         UNDETERMINED,
@@ -88,6 +90,7 @@ contract Pool is Ownable {
             } else{
                 cr.status = RequestStatus.GRANTED;
             }
+            emit RequestVotingEnded(cr.grantVotes, cr.denyVotes);
         }
     }
 
@@ -95,6 +98,10 @@ contract Pool is Ownable {
         address[] storage inspectors = zipCodeToInspectors[zipCode];
         require(inspectors.length < inspectorPerCity, "Inspector limit reached for the city");
         inspectors.push(inspector);
+    }
+
+    function buyPoolPartially() external payable{
+
     }
 
 }
