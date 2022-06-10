@@ -21,12 +21,14 @@ contract DeedNFT is ERC721Enumerable, AccessControl {
 	[Door Number] ** uint value ofdoor number	
      	
     */
+
+    /*
+    UPDATE
+    houseId is unique identifier of a house.
+    
+    */
     struct Metadata {
-    uint cityId;
-    uint districtId;
-    uint streetId;
-    uint buildingNum;
-    uint doorNum;
+    uint houseId;
     uint marketValue;
     uint EarthquakeScore;
     uint zipcode;
@@ -47,14 +49,10 @@ contract DeedNFT is ERC721Enumerable, AccessControl {
     	return tokenIdToRealEstate[tokenId_];
     }
 
-    function setterForMetadata(uint tokenId_, uint cityId,uint districtId,uint streetId, uint buildingNum,uint doorNum, uint marketValue, uint universalIdentifierIfExists,uint EarthquakeScore, uint zipcode, uint latitude, uint longitude) public onlyRole(STATE_ROLE) {
-        
+    function setterForMetadata(uint tokenId_, uint houseId, uint marketValue, uint universalIdentifierIfExists,uint EarthquakeScore, uint zipcode uint latitude, uint longitude) public onlyRole(STATE_ROLE) {
+       
 	 Metadata memory metadata = new Metadata(
-	 cityId,
-	 districtId,
-	 streetId,
-	 buildingNum,
-	 doorNum,
+	 houseId,
          marketValue,
 	 EarthquakeScore,
 	 zipcode,
