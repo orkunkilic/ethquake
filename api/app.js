@@ -40,10 +40,10 @@ app.post('/nft/issue', async (req, res) => {
         req.body.address,
         req.body.houseId,
         req.body.zipCode,
-        100000,
-        25,
-        50,
-        70
+        100000, // mock values for demo purposes
+        25, // mock values for demo purposes
+        50, // mock values for demo purposes
+        70 // mock values for demo purposes
     )
 
     const signedTx = await wallet.signTransaction(unsignedTx)
