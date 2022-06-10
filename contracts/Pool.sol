@@ -120,7 +120,7 @@ contract Pool is Ownable {
     function buyPoolPartially(uint8 percentage) external payable{
         require(canBuyTokens);
         uint256 price =  calculateTokenPrice(percentage, address(this).balance);
-        require(msg.value == price, "Inadequate money for the percentage");
+        stableToken.transferFrom(msg.sender, address(this), price * percentage);
         tokenCtc.transferFrom(address(tokenCtc), msg.sender, percentage);
         tokenCtc.approve(address(this), percentage);
     }
