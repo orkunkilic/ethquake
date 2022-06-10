@@ -3,13 +3,16 @@ import { ethers } from "ethers"
 //import data from "../abis/"
 import poolCtcData from "../abis/pool.json"
 import nftCtcData from "../abis/nft.json"
+import tokenData from "../abis/token.json"
 
 const poolAddr = "0xd7503bC5957132D9f80a27BB0A6bAF6148ef906E"
 const nftAddr = ""
+const tokenAddr = ""
 const provider = new ethers.providers.Web3Provider(window.ethereum)
 const signer = provider.getSigner()
 const poolCtc = new ethers.Contract(poolAddr, poolCtcData.abi, signer);
 const nftCtc = new ethers.Contract(nftAddr, nftCtcData.abi, signer);
+const tokenCtc = new ethers.Contract(tokenAddr, tokenData.abi, signer)
 
 const InsurePage = () => {
 
@@ -17,11 +20,12 @@ const InsurePage = () => {
         const getOwnedHouses = async () => {
             const houses = []
             const addr = await signer.getAddress()
-            const noOfHouses = await nftCtc.balanceOf(noOfHouses);
+            const noOfHouses = await nftCtc.balanceOf(addr);
             for (let i = 0; i < noOfHouses.toNumber(); i++) {
                 const tokenId = await nftCtc.tokenOfOwnerByIndex(addr, i)
-                const house = await nftCtc.getHouseById(tokenId)
-                house.tokenId = tokenId
+                const house = await nftCtc.getterForMetadata(tokenId)
+                const policyFee = await poolCtc.calcEntranceFee(house.amrketValue)
+                house.policyFee = policyFee
                 houses.push(house)
             }
             setHouses(houses)
@@ -29,13 +33,10 @@ const InsurePage = () => {
         getOwnedHouses()
     }, [])
 
-    const [policyFee, setPolicyFee] = useState();
     const [houses, setHouses] = useState([]);
 
     const insure = async (price, id) => {
-        const entranceFee = await poolCtc.calcEntranceFee(price)
-        const txn = await poolCtc.enterPool(id,
-            { value: ethers.utils.parseUnits(entranceFee.toString(), "wei") })
+        const txn = await poolCtc.enterPool(id)
         const receipt = await txn.wait()
         console.log(receipt)
     }
@@ -56,7 +57,7 @@ const InsurePage = () => {
         }}>
             <h1>Insurance Page</h1>
             {houses.length > 0 ?
-                houses.map(h => renderInsureComp(h.policyFee, h.price, h.risk, h.tokenId))
+                houses.map(h => renderInsureComp(h.policyFee, h.marketValue, h.risk, h.tokenId))
                 : <h1>No Houses</h1>}
         </div>
     )
