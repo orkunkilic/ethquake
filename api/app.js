@@ -29,6 +29,8 @@ app.get('/', async (req, res) => {
 }) 
 
 app.post('/nft/issue', async (req, res) => {
+    // should have a middleware to check origin
+
     const provider = new ethers.providers.JsonRpcProvider(RPC_URL)
     const wallet = new ethers.Wallet(PRIVATE_KEY, provider)
 
@@ -52,6 +54,8 @@ app.post('/nft/issue', async (req, res) => {
 })
 
 app.post('/nft/transfer', async (req, res) => {
+    // should have a middleware to check origin
+
     const provider = new ethers.providers.JsonRpcProvider(RPC_URL)
     const wallet = new ethers.Wallet(PRIVATE_KEY, provider)
 
@@ -67,5 +71,5 @@ app.post('/nft/transfer', async (req, res) => {
 })
 
 app.listen(port, () => {
-  console.log(`Earthquake app listening on port ${port}`)
+  console.log(`API listening on port ${port}`)
 })
