@@ -2,7 +2,7 @@
 
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/ownership/Ownable.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
 pragma solidity ^0.8.0;
 
@@ -19,7 +19,7 @@ contract Pool is Ownable {
     mapping(uint256 => address[]) internal zipCodeToInspectors;
 
     constructor(IERC721 _nftCtc, IERC20 _tokenCtc, uint8 _minPoolRisk, uint8 _maxPoolRisk, 
-    uint8 _entranceFeePerc, _inspectorPerCity){
+    uint8 _entranceFeePerc, uint8 _inspectorPerCity){
         nftCtc = _nftCtc;
         tokenCtc = _tokenCtc;
         minPoolRisk = _minPoolRisk;
@@ -67,7 +67,7 @@ contract Pool is Ownable {
         claimRequests[houseId] = cr;
     }
 
-    function voteClaimRequest(uint256 houseId, bool vote, uint256 zipcode) external onlyInspector{
+    function voteClaimRequest(uint256 houseId, bool vote, uint256 zipcode) external {
         address[] memory inspectorsOfCity = zipCodeToInspectors[zipcode];
         bool isInspector;
         for(uint8 i = 0; i < inspectorsOfCity.length; i++){
@@ -99,15 +99,23 @@ contract Pool is Ownable {
         inspectors.push(inspector);
     }
 
-    function buyPoolPartially(uint8) external payable{
-
+    function buyPoolPartially(uint8 percentage) external payable{
+        uint256 price =  calculateTokenPrice(percentage, address(this).balance);
+        require(msg.value == price, "Inadequate money for the percentage");
+        tokenCtc.transferFrom(address(tokenCtc), msg.sender, percentage);
+        tokenCtc.approve(address(this), percentage);
     }
 
     function claimInsuranceReward() external{
-        uint8 ownedTokens = nftCtc.balanceOf(msg.sender);
+
+        uint8 ownedTokens = uint8(nftCtc.balanceOf(msg.sender));
         require(ownedTokens > 0, "You don't own any share of the pool");
-        transfer(address(balance) * ownedTokens / 100).to(msg.sender);
-        // burn tokens
+        payable(msg.sender).transfer(address(this).balance * ownedTokens / 100);
+        nftCtc.transferFrom(msg.sender, address(0), ownedTokens);
+    }
+
+    function calculateTokenPrice(uint8 percantage, uint256 poolVolume) internal returns(uint256){
+        return 100;
     }
 
 }
