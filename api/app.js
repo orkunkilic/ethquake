@@ -43,7 +43,7 @@ app.post('/nft/issue', async (req, res) => {
     res.send(tx.hash)
 })
 
-app.post('nft/transfer', async (req, res) => {
+app.post('/nft/transfer', async (req, res) => {
     const provider = new ethers.providers.JsonRpcProvider(RPC_URL)
     const wallet = new ethers.Wallet(PRIVATE_KEY, provider)
 
