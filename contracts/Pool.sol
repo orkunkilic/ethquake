@@ -18,6 +18,15 @@ contract Pool is Ownable {
     uint256 startTime;
     uint256 tokenSaleStart;
     bool canBuyTokens;
+    bool insurersCanClaim;
+    uint256 totalAmountRegistered;
+
+    // TODO: total amount registered
+    // claim votes addresses
+    // total home price
+    // add home addresses to pool as mapping
+    // 
+
 
     mapping(uint256 => ClaimRequest) public claimRequests; // houseId -> Claim Request
     mapping(uint256 => address[]) internal zipCodeToInspectors;
@@ -47,6 +56,8 @@ contract Pool is Ownable {
         RequestStatus status;
         uint8 grantVotes;
         uint8 denyVotes;
+        address[3] grantVoters;
+        address[3] denyVoters;
     }
 
     function enterPool(uint256 houseId) external{
@@ -56,6 +67,7 @@ contract Pool is Ownable {
         uint256 enteranceFee = calcEntranceFee(houseId);
         stableToken.transferFrom(msg.sender, address(this), enteranceFee);
         noOfHouses++;
+        totalAmountRegistered += nftCtc.getPrice(houseId);
     }
 
     function canEnterPool(uint256 houseId) internal returns(bool){
@@ -97,13 +109,16 @@ contract Pool is Ownable {
         require(isInspector, "You are not an inspector of the selected city");
         ClaimRequest storage cr = claimRequests[houseId];
         if(vote){
+            cr.grantVoter[cr.grantVotes] = msg.sender;
             cr.grantVotes++;
         } else {
+            cr.denyVoters[cr.denyVotes] = msg.sender;
             cr.denyVotes++;
         }
         if(cr.grantVotes + cr.denyVotes == inspectorPerCity){
             if(cr.grantVotes > cr.denyVotes){
                 cr.status = RequestStatus.GRANTED;
+                // TODO: add here penalty for denied voters.
             } else{
                 cr.status = RequestStatus.DENIED;
             }
@@ -111,35 +126,51 @@ contract Pool is Ownable {
         }
     }
 
+    function claimAsHouseOwner(houseId) external {
+        require(msg.sender == nftCtc.ownerOf(houseId), "You are not the owner of the house");
+        require(claimRequests[houseId].status == RequestStatus.GRANTED, "Your request hasn't been granted.");
+
+        uint256 claimable = min(nftCtc.getPrice(houseId) * stableToken.balanceOf(address(this)) / totalAmountRegistered, nftCtc.getPrice(houseId));
+        totalAmountRegistered -= nftCtc.getPrice(houseId);
+        stableToken.transferFrom(address(this), msg.sender, claimable);
+    }
+
     function addInspector(uint256 zipCode, address inspector) external onlyOwner{
         address[] storage inspectors = zipCodeToInspectors[zipCode];
         require(inspectors.length < inspectorPerCity, "Inspector limit reached for the city");
         inspectors.push(inspector);
     }
-
-    function buyPoolPartially(uint8 percentage) external payable{
+    // each amount represents 1 / 100
+    function buyPoolPartially(uint8 amount) external payable{
         require(canBuyTokens);
-        uint256 price =  calculateTokenPrice(percentage, address(this).balance);
-        stableToken.transferFrom(msg.sender, address(this), price * percentage);
-        tokenCtc.transferFrom(address(tokenCtc), msg.sender, percentage);
-        tokenCtc.approve(address(this), percentage);
+        uint256 price =  calculateTokenPrice(amount, totalAmountRegistered);
+        stableToken.transferFrom(msg.sender, address(this), price * amount);
+        tokenCtc.transferFrom(address(tokenCtc), msg.sender, amount);
     }
 
-    function claimInsuranceReward() external{
-        uint8 ownedTokens = uint8(nftCtc.balanceOf(msg.sender));
+    function claimAsInsurer() external{
+        require(insurersCanClaim, "Insurers can't claim yet.");
+        uint8 ownedTokens = uint8(tokenCtc.balanceOf(msg.sender));
         require(ownedTokens > 0, "You don't own any share of the pool");
-        payable(msg.sender).transfer(address(this).balance * ownedTokens / 100);
-        nftCtc.transferFrom(msg.sender, address(0), ownedTokens);
+        uint256 claimable = stableToken.balanceOf(address(this)) * ownedTokens / 100;
+        tokenCtc.transferFrom(msg.sender, address(0), ownedTokens);
+        stableToken.transferFrom(address(this), msg.sender, claimable);
     }
 
-    function calculateTokenPrice(uint8 percantage, uint256 poolVolume) internal returns(uint256){
+    function calculateTokenPrice(uint8 percantage, uint256 initalPoolVolume) internal returns(uint256){
         return 100;
     }
 
     function startTokenSale() external onlyOwner {
-        require(block.timestamp - startTime >= 30 days, "Insurance period hasnt ended yet");
+        require(block.timestamp - startTime >= 30 days, "Pool registry hasnt ended yet");
         canBuyTokens = true;
         tokenSaleStart = block.timestamp;
+    }
+
+    function endInsurance() external onlyOwner {
+        require(block.timestamp - tokenSaleStart >= 365 days, "Insurance period hasnt ended yet");
+        insurersCanClaim = true;
+        canBuyTokens = false;
     }
 
 }
