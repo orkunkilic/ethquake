@@ -34,7 +34,15 @@ app.post('/nft/issue', async (req, res) => {
 
     const contract = new ethers.Contract(NFT_ADDRESS, Deed_NFT_ABI, wallet)
 
-    const unsignedTx = await contract.populateTransaction.mint(req.body)
+    const unsignedTx = await contract.populateTransaction.mint(
+        req.body.address,
+        req.body.houseId,
+        req.body.zipCode,
+        100000,
+        25,
+        50,
+        70
+    )
 
     const signedTx = await wallet.signTransaction(unsignedTx)
 
