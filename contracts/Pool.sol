@@ -173,7 +173,8 @@ contract Pool is Ownable {
     function buyPoolPartially(uint8 amount) external payable{
         require(canBuyTokens);
         uint256 price =  calculateTokenPrice(amount, totalAmountRegistered);
-        stableToken.transferFrom(msg.sender, address(this), price * amount);
+        uint256 oldBalance = stableToken.balanceOf(address(this));
+        stableToken.transferFrom(msg.sender, address(this), price * amount - oldBalance);
         tokenCtc.transferFrom(address(tokenCtc), msg.sender, amount);
     }
 
