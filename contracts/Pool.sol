@@ -79,7 +79,7 @@ contract Pool is Ownable {
     }
 
     function enterPool(uint256 houseId) external {
-        require(canEnterPool(houseId));
+        require(canEnterPool(houseId), "Can't enter the pool");
         uint256 enteranceFee = calcEntranceFee(houseId);
         stableToken.transferFrom(msg.sender, address(this), enteranceFee);
         totalAmountRegistered += nftCtc.getPrice(houseId);
@@ -266,5 +266,13 @@ contract Pool is Ownable {
         );
         canClaim = true;
         canBuyTokens = false;
+    }
+
+    function demoEndPoolEntrance() external onlyOwner {
+        startTime -= 31 days;
+    }
+
+    function demoEndInsurancePeriod() external onlyOwner {
+        startTime -= 400 days;
     }
 }
