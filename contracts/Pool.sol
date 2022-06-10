@@ -9,6 +9,7 @@ pragma solidity ^0.8.0;
 contract Pool is Ownable {
     IERC721 nftCtc;
     IERC20 tokenCtc;
+    IERC20 stableToken;
     uint8 minPoolRisk;
     uint8 maxPoolRisk;
     uint8 entranceFeePerc;
@@ -21,10 +22,11 @@ contract Pool is Ownable {
     mapping(uint256 => ClaimRequest) public claimRequests; // houseId -> Claim Request
     mapping(uint256 => address[]) internal zipCodeToInspectors;
 
-    constructor(IERC721 _nftCtc, IERC20 _tokenCtc, uint8 _minPoolRisk, uint8 _maxPoolRisk, 
+    constructor(IERC721 _nftCtc, IERC20 _tokenCtc, IERC20 _stableToken, uint8 _minPoolRisk, uint8 _maxPoolRisk, 
     uint8 _entranceFeePerc, uint8 _inspectorPerCity){
         nftCtc = _nftCtc;
         tokenCtc = _tokenCtc;
+        stableToken = _stableToken;
         minPoolRisk = _minPoolRisk;
         maxPoolRisk = _maxPoolRisk;
         entranceFeePerc = _entranceFeePerc;
@@ -49,7 +51,10 @@ contract Pool is Ownable {
 
     function enterPool(uint256 houseId) external payable{
         require((block.timestamp - startTime) <= 30 days, "Insurance period has ended");
+        require(msg.sender == nftCtc.ownerOf(houseId), "You are not the owner of the house");
         require(canEnterPool(houseId));
+        uint256 enteranceFee = calcEntranceFee(houseId);
+        stableToken.transferFrom(msg.sender, address(this), enteranceFee);
         noOfHouses++;
     }
 
@@ -66,7 +71,7 @@ contract Pool is Ownable {
         return true;
     }
 
-    function calcEntranceFee(uint256 housePrice) public view returns(uint256){
+    function calcEntranceFee(uint256 houseId) public view returns(uint256){
         return housePrice * uint256(entranceFeePerc);
     }
 
