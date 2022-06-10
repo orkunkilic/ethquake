@@ -4,8 +4,14 @@ pragma solidity ^0.8.14;
 
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
+import "@openzeppelin/contracts/utils/Counters.sol";
+
 
 contract DeedNFT is ERC721Enumerable, AccessControl {    
+    using Counters for Counters.Counter;
+
+    Counters.Counter private _tokenIdCounter;
+
     bytes32 public constant STATE_ROLE = keccak256("STATE_ROLE");
     bytes32 public constant OWNER_ROLE = keccak256("OWNER_ROLE");
 
@@ -76,7 +82,9 @@ contract DeedNFT is ERC721Enumerable, AccessControl {
 	 tokenIdToRealEstate[tokenId_] = metadata;
     }
 
-    function safeMint(address to, uint256 tokenId, uint houseId, uint marketValue, uint riskScore, uint zipCode, int latitude, int longitude) public onlyRole(STATE_ROLE) {
+    function safeMint(address to, uint houseId, uint marketValue, uint riskScore, uint zipCode, int latitude, int longitude) public onlyRole(STATE_ROLE) {
+        uint256 tokenId = _tokenIdCounter.current();
+        _tokenIdCounter.increment();
         _safeMint(to, tokenId);
         houseIdToTokenId[houseId] = tokenId;
         tokenIdToRealEstate[tokenId] = Metadata(houseId,marketValue,riskScore,zipCode,latitude,longitude);
