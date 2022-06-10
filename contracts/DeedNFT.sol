@@ -108,6 +108,7 @@ contract DeedNFT is ERC721Enumerable, AccessControl {
 
     }
 
+    //hash is keccak256 hashed version of tokenId(as a string)
     function recover(bytes32 hash, bytes memory sig) public pure returns (address) {
     bytes32 r;
     bytes32 s;
