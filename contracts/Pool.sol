@@ -12,15 +12,17 @@ contract Pool is Ownable {
     uint8 entranceFeePerc;
     uint256 noOfHouses;
     uint256 noOfClaimRequests;
+    uint8 inspectorPerCity;
 
     mapping(uint256 => ClaimRequest) public claimRequests; // houseId -> Claim Request
     mapping(uint256 => address[]) internal zipCodeToInspectors;
 
-    constructor(IERC721 _nftCtc, uint8 _minPoolRisk, uint8 _maxPoolRisk, uint8 _entranceFeePerc){
+    constructor(IERC721 _nftCtc, uint8 _minPoolRisk, uint8 _maxPoolRisk, uint8 _entranceFeePerc, _inspectorPerCity){
         nftCtc = _nftCtc;
         minPoolRisk = _minPoolRisk;
         maxPoolRisk = _maxPoolRisk;
-        _entranceFeePerc = _entranceFeePerc;
+        entranceFeePerc = _entranceFeePerc;
+        inspectorPerCity = _inspectorPerCity; 
     }
 
     modifier onlyInspector{
@@ -64,9 +66,35 @@ contract Pool is Ownable {
         claimRequests[noOfClaimRequests] = cr;
     }
 
-    function voteClaimRequest(bool vote) external onlyInspector{
-
+    function voteClaimRequest(uint256 houseId, bool vote, uint256 zipcode) external onlyInspector{
+        address[] memory inspectorsOfCity = zipCodeToInspectors[zipcode];
+        bool isInspector;
+        for(uint8 i = 0; i < inspectorsOfCity.length; i++){
+            if(inspectorsOfCity[i] == msg.sender){
+                isInspector = true;
+                break;
+            }
+        }
+        require(isInspector, "You are not an inspector of the selected city");
+        ClaimRequest storage cr = claimRequests[houseId];
+        if(vote){
+            cr.grantVotes++;
+        } else {
+            cr.denyVotes++;
+        }
+        if(cr.grantVotes + cr.denyVotes == inspectorPerCity){
+            if(cr.grantVotes > cr.denyVotes){
+                cr.status = RequestStatus.GRANTED;
+            } else{
+                cr.status = RequestStatus.GRANTED;
+            }
+        }
     }
 
+    function addInspector(uint256 zipCode, address inspector) external onlyOwner{
+        address[] storage inspectors = zipCodeToInspectors[zipCode];
+        require(inspectors.length < inspectorPerCity, "Inspector limit reached for the city");
+        inspectors.push(inspector);
+    }
 
 }
