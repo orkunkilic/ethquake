@@ -73,12 +73,18 @@ app.post('/nft/transfer', async (req, res) => {
                 owner: {
                     address: req.body.address, 
                     signature: req.body.signature
+                },
+                receiver: {
+                    address: req.body.receiver,
                 }
             }
         })
         res.send("saved")
     }
 
+    if(data.receiver.address != req.body.address) {
+        res.send("You are not the receiver!")
+    }
 
     const provider = new ethers.providers.JsonRpcProvider(RPC_URL)
 
@@ -86,7 +92,12 @@ app.post('/nft/transfer', async (req, res) => {
 
     const contract = new ethers.Contract(NFT_ADDRESS, Deed_NFT_ABI, wallet)
 
-    const unsignedTx = await contract.populateTransaction.transfer(data.owner.ownerAddress, req.body.address, req.body.tokenId, data.owner.ownerSignature, req.body.signature)
+    const unsignedTx = await contract.populateTransaction.transfer(data.owner.ownerAddress,
+        data.receiver.address,
+        req.body.tokenId, 
+        data.owner.ownerSignature, 
+        req.body.signature
+    )
 
     const signedTx = await wallet.signTransaction(unsignedTx)
 
