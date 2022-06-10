@@ -15,17 +15,34 @@ contract DeedNFT is ERC721, AccessControl {
     uint marketValue;
     uint universalIdentifierIfExists;
     uint EarthquakeScore;
+    uint zipcode;
     }
     
     mapping(tokenId => Metadata) public tokenIdToRealEstate;
 
-    constructor() ERC721("MyToken", "MTK") {
+    constructor(address owner_,address notary_) ERC721("MyToken", "MTK") {
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
-        _grantRole(MINTER_ROLE, msg.sender);
+        _grantRole(STATE_ROLE, msg.sender);
+	_grantRole(NOTARY_ROLE, notary_);
+	_grantRole(OWNER_ROLE, owner_);
     }
 
-    function getterForMetadata() public {}
-    function setterForMetadata() public onlyRole(STATE_ROLE)
+    function getterForMetadata(uint tokenId_) public {
+    	return tokenIdToRealEstate[tokenId_];
+    }
+
+    function setterForMetadata(uint tokenId_, string memory Addr, uint marketValue, uint universalIdentifierIfExists,uint EarthquakeScore, uint zipcode) public onlyRole(STATE_ROLE) {
+        
+	 Metadata memory metadata = new Metadata(
+	 addressShouldBeStandart,
+	 marketValue,
+	 universalIdentifierIfExists,
+	 EarthquakeScore,
+	 zipcode );
+	 
+	 tokenIdToRealEstate[tokenId_] = metadata;
+    }
+
     function safeMint(address to, uint256 tokenId) public onlyRole(MINTER_ROLE) {
         _safeMint(to, tokenId);
     }
