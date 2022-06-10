@@ -98,7 +98,7 @@ contract Pool is Ownable {
         uint8 houseRisk = nftCtc.getRisk(houseId);
         uint256 housePrice = nftCtc.getPrice(houseId);
         uint8 noOfInspectors = uint8(
-            zipCodeToInspectors[nftCtc.getZipCode(houseId)].length
+            zipCodeToInspectors[nftCtc.getZipcode(houseId)].length
         );
         require(noOfInspectors >= 3, "Not enough inspectors");
         require(

@@ -32,7 +32,7 @@ contract DeedNFT is ERC721Enumerable, AccessControl {
     struct Metadata {
         uint256 houseId;
         uint256 marketValue;
-        uint256 riskScore;
+        uint8 riskScore;
         uint256 zipCode;
         int256 latitude;
         int256 longitude;
@@ -63,7 +63,7 @@ contract DeedNFT is ERC721Enumerable, AccessControl {
         return tokenIdToRealEstate[tokenIdByHouseId(houseId)].zipCode;
     }
 
-    function getRisk(uint256 houseId) public view returns (uint256) {
+    function getRisk(uint256 houseId) public view returns (uint8) {
         return tokenIdToRealEstate[tokenIdByHouseId(houseId)].riskScore;
     }
 
@@ -75,7 +75,7 @@ contract DeedNFT is ERC721Enumerable, AccessControl {
         uint256 tokenId_,
         uint256 houseId,
         uint256 marketValue,
-        uint256 riskScore,
+        uint8 riskScore,
         uint256 zipCode,
         int256 latitude,
         int256 longitude
@@ -96,7 +96,7 @@ contract DeedNFT is ERC721Enumerable, AccessControl {
         address to,
         uint256 houseId,
         uint256 marketValue,
-        uint256 riskScore,
+        uint8 riskScore,
         uint256 zipCode,
         int256 latitude,
         int256 longitude
