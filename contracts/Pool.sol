@@ -105,7 +105,7 @@ contract Pool is Ownable {
             if(cr.grantVotes > cr.denyVotes){
                 cr.status = RequestStatus.GRANTED;
             } else{
-                cr.status = RequestStatus.GRANTED;
+                cr.status = RequestStatus.DENIED;
             }
             emit RequestVotingEnded(cr.grantVotes, cr.denyVotes);
         }
