@@ -3,6 +3,7 @@
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "./Stake.sol";
 
 pragma solidity ^0.8.0;
 
@@ -10,7 +11,7 @@ contract Pool is Ownable {
     IERC721 nftCtc;
     IERC20 tokenCtc;
     IERC20 stableToken;
-    IERC20 stakeCtc;
+    Staking stakeCtc;
     uint8 minPoolRisk;
     uint8 maxPoolRisk;
     uint8 entranceFeePerc;
@@ -33,7 +34,7 @@ contract Pool is Ownable {
     mapping(uint256 => bool) public housesInPool; 
 
     constructor(IERC721 _nftCtc, IERC20 _tokenCtc, IERC20 _stableToken, uint8 _minPoolRisk, uint8 _maxPoolRisk, 
-    uint8 _entranceFeePerc, uint8 _inspectorPerCity, IERC20 _stakeCtc){
+    uint8 _entranceFeePerc, uint8 _inspectorPerCity, Staking _stakeCtc){
         nftCtc = _nftCtc;
         tokenCtc = _tokenCtc;
         stableToken = _stableToken;
@@ -120,16 +121,12 @@ contract Pool is Ownable {
                 totalPriceHouseGranted += nftCtc.getPrice(cr.houseId);
                 remainingHousesGranted += 1;
                 if(cr.denyVotes == 1){
-                    stakeInfo.slashInspector(cr.denyVotes[0]);
-                    stakeInfo.rewardInspector(cr.grantVotes[0]);
-                    stakeInfo.rewardInspector(cr.grantVotes[1]);
+                    stakeCtc.slashInspector(cr.denyVotes[0]);
                 }
             } else{
                 cr.status = RequestStatus.DENIED;
                 if(cr.grantvotes == 1){
-                    stakeInfo.slashInspector(cr.grantVotes[0]);
-                    stakeInfo.rewardInspector(cr.denyVotes[0]);
-                    stakeInfo.rewardInspector(cr.denyVotes[1]);
+                    stakeCtc.rewardInspector(cr.grantVotes[0]);
                 }
             }
             emit RequestVotingEnded(cr.grantVotes, cr.denyVotes);
