@@ -6,7 +6,6 @@ import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 
 contract DeedNFT is ERC721Enumerable, AccessControl {    
-    bytes32 public constant NOTARY_ROLE = keccak256("NOTARY_ROLE");
     bytes32 public constant STATE_ROLE = keccak256("STATE_ROLE");
     bytes32 public constant OWNER_ROLE = keccak256("OWNER_ROLE");
 
@@ -38,10 +37,9 @@ contract DeedNFT is ERC721Enumerable, AccessControl {
     mapping(uint => Metadata) public tokenIdToRealEstate;
     mapping(uint => uint) public houseIdToTokenId;
 
-    constructor(address houseOwner, address notary) ERC721("MyToken", "MTK") {
-        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
-        _grantRole(STATE_ROLE, msg.sender);
-	_grantRole(NOTARY_ROLE, notary);
+    constructor(address houseOwner) ERC721("MyToken", "MTK") {
+    _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
+    _grantRole(STATE_ROLE, msg.sender);
 	_grantRole(OWNER_ROLE, houseOwner);
     }
 
@@ -78,8 +76,11 @@ contract DeedNFT is ERC721Enumerable, AccessControl {
 	 tokenIdToRealEstate[tokenId_] = metadata;
     }
 
-    function safeMint(address to, uint256 tokenId) public onlyRole(STATE_ROLE) {
+    function safeMint(address to, uint256 tokenId, uint houseId, uint marketValue, uint riskScore, uint zipCode, int latitude, int longitude) public onlyRole(STATE_ROLE) {
         _safeMint(to, tokenId);
+        houseIdToTokenId[houseId] = tokenId;
+        tokenIdToRealEstate[tokenId] = Metadata(houseId,marketValue,riskScore,zipCode,latitude,longitude);
+
     }
 
 
