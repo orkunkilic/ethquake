@@ -13,7 +13,6 @@ contract DeedNFT is ERC721Enumerable, AccessControl {
 
     /*
 	OUR ADDRESS STANDART
-
        	[City Identifier Number] ** Istanbul is default and denotated with 0
        	[District Identifier Number] ** Bebek is default and denotated with 0
        	[Street Identifier Number] ** Bogazici is default and denotated with 0
@@ -43,7 +42,7 @@ contract DeedNFT is ERC721Enumerable, AccessControl {
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _grantRole(STATE_ROLE, msg.sender);
 	_grantRole(NOTARY_ROLE, notary);
-	_grantRole(OWNER_ROLE, houseOwner_);
+	_grantRole(OWNER_ROLE, houseOwner);
     }
 
     function getMetadata(uint tokenId_) public view returns(Metadata memory) {
@@ -55,24 +54,24 @@ contract DeedNFT is ERC721Enumerable, AccessControl {
     }
 
     function getZipcode(uint houseId) public view returns(uint){
-	return tokenIdToRealEstate[tokenIdByHouseId(houseId)].zipcode;
+	return tokenIdToRealEstate[tokenIdByHouseId(houseId)].zipCode;
     }
    
     function getRisk(uint houseId) public view returns(uint){
-        return tokenIdToRealEstate[tokenIdByHouseId(houseId)].RiskScore;
+        return tokenIdToRealEstate[tokenIdByHouseId(houseId)].riskScore;
     }
 
     function getPrice(uint houseId) public view returns(uint){
         return tokenIdToRealEstate[tokenIdByHouseId(houseId)].marketValue;
     }
 
-    function setMetadata(uint tokenId_, uint houseId, uint marketValue, uint EarthquakeScore, uint zipcode , uint latitude, uint longitude) public onlyRole(STATE_ROLE) {
+    function setMetadata(uint tokenId_, uint houseId, uint marketValue, uint riskScore, uint zipCode , int latitude, int longitude) public onlyRole(STATE_ROLE) {
        
 	 Metadata memory metadata = Metadata(
 	 houseId,
-         marketValue,
-	 EarthquakeScore,
-	 zipcode,
+     marketValue,
+	 riskScore,
+	 zipCode,
 	 latitude,
 	 longitude );
 	 
@@ -98,7 +97,7 @@ contract DeedNFT is ERC721Enumerable, AccessControl {
     function supportsInterface(bytes4 interfaceId)
         public
         view
-        override(ERC721Enumerab00le, AccessControl)
+        override(ERC721Enumerable, AccessControl)
         returns (bool)
     {
         return super.supportsInterface(interfaceId);
