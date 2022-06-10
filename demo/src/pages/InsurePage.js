@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from "react"
 import { ethers } from "ethers"
 //import data from "../abis/"
-let poolCtcData
-let nftCtcData
+import poolCtcData from "../abis/pool.json"
+import nftCtcData from "../abis/nft.json"
 
 const poolAddr = "0xd7503bC5957132D9f80a27BB0A6bAF6148ef906E"
 const nftAddr = ""
@@ -30,12 +30,12 @@ const InsurePage = () => {
     }, [])
 
     const [policyFee, setPolicyFee] = useState();
-    const [houses, setHouses] = useState();
+    const [houses, setHouses] = useState([]);
 
     const insure = async (price, id) => {
         const entranceFee = await poolCtc.calcEntranceFee(price)
         const txn = await poolCtc.enterPool(id,
-            { value: ethers.utils.parseUnits(entranceFee.toString(), "wei")})
+            { value: ethers.utils.parseUnits(entranceFee.toString(), "wei") })
         const receipt = await txn.wait()
         console.log(receipt)
     }
@@ -55,7 +55,9 @@ const InsurePage = () => {
             justifyContent: "center", flexDirection: "column"
         }}>
             <h1>Insurance Page</h1>
-            {houses.map(h => renderInsureComp(h.policyFee, h.price, h.risk, h.tokenId))}
+            {houses.length > 0 ?
+                houses.map(h => renderInsureComp(h.policyFee, h.price, h.risk, h.tokenId))
+                : <h1>No Houses</h1>}
         </div>
     )
 }
