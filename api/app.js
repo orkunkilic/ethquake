@@ -29,12 +29,22 @@ app.get('/', async (req, res) => {
 }) 
 
 app.post('/nft/issue', async (req, res) => {
+    // should have a middleware to check origin
+
     const provider = new ethers.providers.JsonRpcProvider(RPC_URL)
     const wallet = new ethers.Wallet(PRIVATE_KEY, provider)
 
     const contract = new ethers.Contract(NFT_ADDRESS, Deed_NFT_ABI, wallet)
 
-    const unsignedTx = await contract.populateTransaction.mint(req.body)
+    const unsignedTx = await contract.populateTransaction.mint(
+        req.body.address,
+        req.body.houseId,
+        req.body.zipCode,
+        100000,
+        25,
+        50,
+        70
+    )
 
     const signedTx = await wallet.signTransaction(unsignedTx)
 
@@ -44,6 +54,8 @@ app.post('/nft/issue', async (req, res) => {
 })
 
 app.post('/nft/transfer', async (req, res) => {
+    // should have a middleware to check origin
+
     const provider = new ethers.providers.JsonRpcProvider(RPC_URL)
     const wallet = new ethers.Wallet(PRIVATE_KEY, provider)
 
@@ -59,5 +71,5 @@ app.post('/nft/transfer', async (req, res) => {
 })
 
 app.listen(port, () => {
-  console.log(`Earthquake app listening on port ${port}`)
+  console.log(`API listening on port ${port}`)
 })
