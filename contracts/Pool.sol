@@ -8,10 +8,6 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "./DeedNFT.sol";
 import "./Stake.sol";
 
-
-
-
-
 contract PoolToken is ERC20 {
     constructor() ERC20("Pool 1", "P1") {
         _mint(msg.sender, 100);
@@ -86,10 +82,11 @@ contract Pool is Ownable {
     function canEnterPool(uint256 houseId) internal returns(bool){
         require((block.timestamp - startTime) <= 30 days, "Insurance period has ended");
         require(msg.sender == nftCtc.ownerOf(houseId), "You are not the owner of this house");
+        require(housesInPoll[houseId] == false, "You have already entered to the pool");
         uint8 houseRisk = nftCtc.getRisk(houseId);
         uint256 housePrice = nftCtc.getPrice(houseId);
         uint8 noOfInspectors = uint8(zipCodeToInspectors[nftCtc.getZipCode(houseId)].length);
-        require(noOfInspectors >= 3, "Not enough inspectors");
+        require(noOfInspectors == 3, "Not enough inspectors");
         require(houseRisk >= minPoolRisk && houseRisk <= maxPoolRisk, "House risk out of pool's boundaries");
         return true;
     }
@@ -128,18 +125,22 @@ contract Pool is Ownable {
             cr.denyVoters[cr.denyVotes] = msg.sender;
             cr.denyVotes++;
         }
-        if(cr.grantVotes + cr.denyVotes == inspectorPerCity){
+        if(cr.grantVotes + cr.denyVotes == 3){
             if(cr.grantVotes > cr.denyVotes){
                 cr.status = RequestStatus.GRANTED;
                 totalPriceHouseGranted += nftCtc.getPrice(cr.houseId);
                 remainingHousesGranted += 1;
                 if(cr.denyVotes == 1){
                     stakeCtc.slashInspector(cr.denyVoters[0]);
+                    stakeCtc.rewardInspector(cr.grantVoters[0]);
+                    stakeCtc.rewardInspector(cr.denyVoters[1]);
                 }
             } else{
                 cr.status = RequestStatus.DENIED;
                 if(cr.grantVotes == 1){
-                    stakeCtc.rewardInspector(cr.grantVoters[0]);
+                    stakeCtc.slash(cr.grantVoters[0]);
+                    stakeCtc.rewardInspector(cr.denyVoters[0]);
+                    stakeCtc.rewardInspector(cr.denyVoters[1]);
                 }
             }
             emit RequestVotingEnded(cr.grantVotes, cr.denyVotes);
@@ -152,6 +153,7 @@ contract Pool is Ownable {
 
     function claimAsHouseOwner(uint256 houseId) external {
         require(canClaim);
+        require(block.timestamp - startBlockTime >= 365 days, "Can't claim yet");
         require(remainingHousesGranted > 0, "Houses can not be claimed anymore");
         require(msg.sender == nftCtc.ownerOf(houseId), "You are not the owner of the house");
         require(claimRequests[houseId].status == RequestStatus.GRANTED, "Your request hasn't been granted.");
@@ -166,7 +168,7 @@ contract Pool is Ownable {
 
     function addInspector(uint256 zipCode, address inspector) external onlyOwner{
         address[] storage inspectors = zipCodeToInspectors[zipCode];
-        require(inspectors.length < inspectorPerCity, "Inspector limit reached for the city");
+        require(inspectors.length < 3, "Inspector limit reached for the city");
         inspectors.push(inspector);
     }
     // each amount represents 1 / 100
@@ -190,7 +192,7 @@ contract Pool is Ownable {
     }
 
     function calculateTokenPrice(uint8 percantage, uint256 initalPoolVolume) internal returns(uint256){
-        return 100;
+        return initialVolume * (percentage + (block.timestamp - tokenSaleStart / 30 days) * 4) / 100;
     }
 
     function startTokenSale() external {
