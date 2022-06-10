@@ -1,5 +1,7 @@
 require('dotenv').config();
-require("@nomiclabs/hardhat-solhint");
+// require("@nomiclabs/hardhat-solhint");
+require("@nomiclabs/hardhat-waffle");
+
 
 /**
  * @type import('hardhat/config').HardhatUserConfig
@@ -18,11 +20,5 @@ module.exports = {
         }
       }
     },
-  },
-  networks: {
-    rinkeby: {
-      url: process.env.RINKEBY_API_URL,
-      accounts: [process.env.PRIVATE_KEY]
-    }
   }
 };
