@@ -10,6 +10,7 @@ contract Pool is Ownable {
     IERC721 nftCtc;
     IERC20 tokenCtc;
     IERC20 stableToken;
+    IERC20 stakeCtc;
     uint8 minPoolRisk;
     uint8 maxPoolRisk;
     uint8 entranceFeePerc;
@@ -32,7 +33,7 @@ contract Pool is Ownable {
     mapping(uint256 => bool) public housesInPool; 
 
     constructor(IERC721 _nftCtc, IERC20 _tokenCtc, IERC20 _stableToken, uint8 _minPoolRisk, uint8 _maxPoolRisk, 
-    uint8 _entranceFeePerc, uint8 _inspectorPerCity){
+    uint8 _entranceFeePerc, uint8 _inspectorPerCity, IERC20 _stakeCtc){
         nftCtc = _nftCtc;
         tokenCtc = _tokenCtc;
         stableToken = _stableToken;
@@ -41,6 +42,7 @@ contract Pool is Ownable {
         entranceFeePerc = _entranceFeePerc;
         inspectorPerCity = _inspectorPerCity; 
         startTime = block.timestamp;
+        stakeCtc = _stakeCtc;
     }
 
     event RequestVotingEnded(uint8 grants, uint8 denies);
@@ -117,15 +119,20 @@ contract Pool is Ownable {
                 cr.status = RequestStatus.GRANTED;
                 totalPriceHouseGranted += nftCtc.getPrice(cr.houseId);
                 remainingHousesGranted += 1;
-                // TODO: add here penalty for denied voters.
+                if(cr.denyVotes == 1){
+                    stakeInfo.slashInspector(cr.denyVotes[0]);
+                }
             } else{
                 cr.status = RequestStatus.DENIED;
+                if(cr.grantvotes == 1){
+                    stakeInfo.rewardInspector(cr.grantVotes[0]);
+                }
             }
             emit RequestVotingEnded(cr.grantVotes, cr.denyVotes);
         }
     }
 
-    function claimAsHouseOwner(houseId) external {
+    function claimAsHouseOwner(uint256 houseId) external {
         require(canClaim);
         require(remainingHousesGranted > 0, "Houses can not be claimed anymore");
         require(msg.sender == nftCtc.ownerOf(houseId), "You are not the owner of the house");
