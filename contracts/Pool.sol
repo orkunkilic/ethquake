@@ -61,7 +61,8 @@ contract Pool is Ownable {
     enum RequestStatus{
         UNDETERMINED,
         GRANTED,
-        DENIED
+        DENIED,
+        CLAIMED
     }
 
     struct ClaimRequest{
@@ -153,6 +154,7 @@ contract Pool is Ownable {
         require(remainingHousesGranted > 0, "Houses can not be claimed anymore");
         require(msg.sender == nftCtc.ownerOf(houseId), "You are not the owner of the house");
         require(claimRequests[houseId].status == RequestStatus.GRANTED, "Your request hasn't been granted.");
+        claimRequests[houseId].status = RequestStatus.CLAIMED;
 
         uint256 claimable = min(nftCtc.getPrice(houseId) * stableToken.balanceOf(address(this)) / totalPriceHouseGranted, nftCtc.getPrice(houseId));
         totalAmountRegistered -= nftCtc.getPrice(houseId);
