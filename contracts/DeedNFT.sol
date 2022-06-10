@@ -10,12 +10,28 @@ contract DeedNFT is ERC721, AccessControl {
     bytes32 public constant STATE_ROLE = keccak256("STATE_ROLE");
     bytes32 public constant OWNER_ROLE = keccak256("OWNER_ROLE");
 
+
+    /*
+	OUR ADDRESS STANDART
+
+       	[City Identifier Number] ** Istanbul is default and denotated with 0
+       	[District Identifier Number] ** Bebek is default and denotated with 0
+       	[Street Identifier Number] ** Bogazici is default and denotated with 0
+	[Building Number] ** uint value of building number
+	[Door Number] ** uint value ofdoor number	
+     	
+    */
     struct Metadata {
-    string addressShoulBeStandart;
+    uint cityId;
+    uint districtId;
+    uint streetId;
+    uint buildingNum;
+    uint doorNum;
     uint marketValue;
-    uint universalIdentifierIfExists;
     uint EarthquakeScore;
     uint zipcode;
+    uint latitude;
+    uint longitude;
     }
     
     mapping(tokenId => Metadata) public tokenIdToRealEstate;
@@ -24,21 +40,26 @@ contract DeedNFT is ERC721, AccessControl {
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _grantRole(STATE_ROLE, msg.sender);
 	_grantRole(NOTARY_ROLE, notary_);
-	_grantRole(OWNER_ROLE, owner_);
+	_grantRole(OWNER_ROLE, owner;
     }
 
     function getterForMetadata(uint tokenId_) public {
     	return tokenIdToRealEstate[tokenId_];
     }
 
-    function setterForMetadata(uint tokenId_, string memory Addr, uint marketValue, uint universalIdentifierIfExists,uint EarthquakeScore, uint zipcode) public onlyRole(STATE_ROLE) {
+    function setterForMetadata(uint tokenId_, uint cityId,uint districtId,uint streetId, uint buildingNum,uint doorNum, uint marketValue, uint universalIdentifierIfExists,uint EarthquakeScore, uint zipcode, uint latitude, uint longitude) public onlyRole(STATE_ROLE) {
         
 	 Metadata memory metadata = new Metadata(
-	 addressShouldBeStandart,
-	 marketValue,
-	 universalIdentifierIfExists,
+	 cityId,
+	 districtId,
+	 streetId,
+	 buildingNum,
+	 doorNum,
+         marketValue,
 	 EarthquakeScore,
-	 zipcode );
+	 zipcode,
+	 latitude,
+	 longitude );
 	 
 	 tokenIdToRealEstate[tokenId_] = metadata;
     }
