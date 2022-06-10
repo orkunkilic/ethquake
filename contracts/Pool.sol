@@ -49,7 +49,7 @@ contract Pool is Ownable {
         uint8 denyVotes;
     }
 
-    function enterPool(uint256 houseId) external payable{
+    function enterPool(uint256 houseId) external{
         require((block.timestamp - startTime) <= 30 days, "Insurance period has ended");
         require(msg.sender == nftCtc.ownerOf(houseId), "You are not the owner of the house");
         require(canEnterPool(houseId));
@@ -126,7 +126,6 @@ contract Pool is Ownable {
     }
 
     function claimInsuranceReward() external{
-
         uint8 ownedTokens = uint8(nftCtc.balanceOf(msg.sender));
         require(ownedTokens > 0, "You don't own any share of the pool");
         payable(msg.sender).transfer(address(this).balance * ownedTokens / 100);
