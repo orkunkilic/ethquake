@@ -121,11 +121,15 @@ contract Pool is Ownable {
                 remainingHousesGranted += 1;
                 if(cr.denyVotes == 1){
                     stakeInfo.slashInspector(cr.denyVotes[0]);
+                    stakeInfo.rewardInspector(cr.grantVotes[0]);
+                    stakeInfo.rewardInspector(cr.grantVotes[1]);
                 }
             } else{
                 cr.status = RequestStatus.DENIED;
                 if(cr.grantvotes == 1){
-                    stakeInfo.rewardInspector(cr.grantVotes[0]);
+                    stakeInfo.slashInspector(cr.grantVotes[0]);
+                    stakeInfo.rewardInspector(cr.denyVotes[0]);
+                    stakeInfo.rewardInspector(cr.denyVotes[1]);
                 }
             }
             emit RequestVotingEnded(cr.grantVotes, cr.denyVotes);
