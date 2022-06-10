@@ -72,7 +72,9 @@ contract Pool is Ownable {
     }
 
     function calcEntranceFee(uint256 houseId) public view returns(uint256){
-        return housePrice * uint256(entranceFeePerc);
+        uint8 houseRisk = nftCtc.getRisk(houseId);
+        uint256 housePrice = nftCtc.getPrice(houseId);
+        return houseRisk * housePrice / 100; // for now
     }
 
     function makeClaimRequest(uint256 houseId) external {
