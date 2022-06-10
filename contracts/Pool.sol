@@ -99,8 +99,15 @@ contract Pool is Ownable {
         inspectors.push(inspector);
     }
 
-    function buyPoolPartially() external payable{
+    function buyPoolPartially(uint8) external payable{
 
+    }
+
+    function claimInsuranceReward() external{
+        uint8 ownedTokens = nftCtc.balanceOf(msg.sender);
+        require(ownedTokens > 0, "You don't own any share of the pool");
+        transfer(address(balance) * ownedTokens / 100).to(msg.sender);
+        // burn tokens
     }
 
 }
