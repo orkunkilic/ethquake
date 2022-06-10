@@ -3,8 +3,9 @@
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "contracts/DeedNFT.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "./DeedNFT.sol";
+import "./Stake.sol";
 
 pragma solidity ^0.8.0;
 
@@ -20,6 +21,7 @@ contract Pool is Ownable {
     DeedNFT nftCtc;
     IERC20 tokenCtc;
     IERC20 stableToken;
+    Staking stakeCtc;
     uint8 minPoolRisk;
     uint8 maxPoolRisk;
     uint8 entranceFeePerc;
@@ -42,7 +44,7 @@ contract Pool is Ownable {
     mapping(uint256 => bool) public housesInPool; 
 
     constructor(DeedNFT _nftCtc, IERC20 _stableToken, uint8 _minPoolRisk, uint8 _maxPoolRisk, 
-    uint8 _entranceFeePerc, uint8 _inspectorPerCity){
+    uint8 _entranceFeePerc, uint8 _inspectorPerCity, Staking _stakeCtc){
         nftCtc = _nftCtc;
         // tokenCtc = _tokenCtc;
         stableToken = _stableToken;
@@ -51,6 +53,7 @@ contract Pool is Ownable {
         entranceFeePerc = _entranceFeePerc;
         inspectorPerCity = _inspectorPerCity; 
         startTime = block.timestamp;
+        stakeCtc = _stakeCtc;;
     }
 
     event RequestVotingEnded(uint8 grants, uint8 denies);
@@ -128,10 +131,14 @@ contract Pool is Ownable {
                 cr.status = RequestStatus.GRANTED;
                 totalPriceHouseGranted += nftCtc.getPrice(cr.houseId);
                 remainingHousesGranted += 1;
-                // TODO: add here penalty for denied voters.
+                if(cr.denyVotes == 1){
+                    stakeCtc.slashInspector(cr.denyVotes[0]);
+                }
             } else{
                 cr.status = RequestStatus.DENIED;
-                // TODO: add here penalty for granted voters.
+                if(cr.grantvotes == 1){
+                    stakeCtc.rewardInspector(cr.grantVotes[0]);
+                }
             }
             emit RequestVotingEnded(cr.grantVotes, cr.denyVotes);
         }
