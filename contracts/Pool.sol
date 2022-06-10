@@ -13,7 +13,6 @@ contract Pool is Ownable {
     uint8 maxPoolRisk;
     uint8 entranceFeePerc;
     uint256 noOfHouses;
-    uint256 noOfClaimRequests;
     uint8 inspectorPerCity;
 
     mapping(uint256 => ClaimRequest) public claimRequests; // houseId -> Claim Request
@@ -61,11 +60,11 @@ contract Pool is Ownable {
     }
 
     function makeClaimRequest(uint256 houseId) external {
+        require(claimRequests[houseId].houseId == 0, "Alreade has claim request!");
         address houseOwner = nftCtc.ownerOf(houseId);
         require(houseOwner == msg.sender, "You are not the owner of this house");
-        noOfClaimRequests++;
         ClaimRequest memory cr = ClaimRequest(houseId, RequestStatus.UNDETERMINED, 0, 0);
-        claimRequests[noOfClaimRequests] = cr;
+        claimRequests[houseId] = cr;
     }
 
     function voteClaimRequest(uint256 houseId, bool vote, uint256 zipcode) external onlyInspector{
