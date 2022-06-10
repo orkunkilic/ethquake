@@ -30,30 +30,47 @@ contract DeedNFT is ERC721Enumerable, AccessControl {
     struct Metadata {
     uint houseId;
     uint marketValue;
-    uint EarthquakeScore;
-    uint zipcode;
-    uint latitude;
-    uint longitude;
+    uint riskScore;
+    uint zipCode;
+    int latitude;
+    int longitude;
     }
     
     mapping(uint => Metadata) public tokenIdToRealEstate;
+    mapping(uint => uint) public houseIdToTokenId;
 
-    constructor(address owner_, address notary) ERC721("MyToken", "MTK") {
+    constructor(address houseOwner, address notary) ERC721("MyToken", "MTK") {
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _grantRole(STATE_ROLE, msg.sender);
-	    _grantRole(NOTARY_ROLE, notary);
-	    _grantRole(OWNER_ROLE, owner_);
+	_grantRole(NOTARY_ROLE, notary);
+	_grantRole(OWNER_ROLE, houseOwner_);
     }
 
-    function getterForMetadata(uint tokenId_) public view returns(Metadata memory) {
+    function getMetadata(uint tokenId_) public view returns(Metadata memory) {
     	return tokenIdToRealEstate[tokenId_];
     }
 
-    function setterForMetadata(uint tokenId_, uint houseId, uint marketValue, uint EarthquakeScore, uint zipcode , uint latitude, uint longitude) public onlyRole(STATE_ROLE) {
+    function tokenIdByHouseId(uint tokenId) public view returns(uint){
+    	return houseIdToTokenId[tokenId];
+    }
+
+    function getZipcode(uint houseId) public view returns(uint){
+	return tokenIdToRealEstate[tokenIdByHouseId(houseId)].zipcode;
+    }
+   
+    function getRisk(uint houseId) public view returns(uint){
+        return tokenIdToRealEstate[tokenIdByHouseId(houseId)].RiskScore;
+    }
+
+    function getPrice(uint houseId) public view returns(uint){
+        return tokenIdToRealEstate[tokenIdByHouseId(houseId)].marketValue;
+    }
+
+    function setMetadata(uint tokenId_, uint houseId, uint marketValue, uint EarthquakeScore, uint zipcode , uint latitude, uint longitude) public onlyRole(STATE_ROLE) {
        
 	 Metadata memory metadata = Metadata(
 	 houseId,
-     marketValue,
+         marketValue,
 	 EarthquakeScore,
 	 zipcode,
 	 latitude,
@@ -65,6 +82,7 @@ contract DeedNFT is ERC721Enumerable, AccessControl {
     function safeMint(address to, uint256 tokenId) public onlyRole(STATE_ROLE) {
         _safeMint(to, tokenId);
     }
+
 
     function tokenIdsByAddress(address addressToQuery) public view returns(uint256[]  memory) {
 	uint balance_ =  balanceOf(addressToQuery);
@@ -80,7 +98,7 @@ contract DeedNFT is ERC721Enumerable, AccessControl {
     function supportsInterface(bytes4 interfaceId)
         public
         view
-        override(ERC721Enumerable, AccessControl)
+        override(ERC721Enumerab00le, AccessControl)
         returns (bool)
     {
         return super.supportsInterface(interfaceId);
