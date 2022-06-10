@@ -1,4 +1,4 @@
-// SPDX-LICENSE-IDENTIFIER: UNLICENSED
+// SPDX-License-Identifier: UNLICENSED
 
 pragma solidity ^0.8.14;
 
@@ -6,7 +6,7 @@ import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 
 contract DeedNFT is ERC721Enumerable, AccessControl {    
-    bytes32 public constant MINTER_ROLE = keccak256("NOTARY__ROLE");
+    bytes32 public constant NOTARY_ROLE = keccak256("NOTARY_ROLE");
     bytes32 public constant STATE_ROLE = keccak256("STATE_ROLE");
     bytes32 public constant OWNER_ROLE = keccak256("OWNER_ROLE");
 
@@ -36,24 +36,24 @@ contract DeedNFT is ERC721Enumerable, AccessControl {
     uint longitude;
     }
     
-    mapping(tokenId => Metadata) public tokenIdToRealEstate;
+    mapping(uint => Metadata) public tokenIdToRealEstate;
 
-    constructor(address owner_,address notary_) ERC721("MyToken", "MTK") {
+    constructor(address owner_, address notary) ERC721("MyToken", "MTK") {
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _grantRole(STATE_ROLE, msg.sender);
-	_grantRole(NOTARY_ROLE, notary_);
-	_grantRole(OWNER_ROLE, owner;
+	    _grantRole(NOTARY_ROLE, notary);
+	    _grantRole(OWNER_ROLE, owner_);
     }
 
-    function getterForMetadata(uint tokenId_) public {
+    function getterForMetadata(uint tokenId_) public view returns(Metadata memory) {
     	return tokenIdToRealEstate[tokenId_];
     }
 
-    function setterForMetadata(uint tokenId_, uint houseId, uint marketValue, uint universalIdentifierIfExists,uint EarthquakeScore, uint zipcode uint latitude, uint longitude) public onlyRole(STATE_ROLE) {
+    function setterForMetadata(uint tokenId_, uint houseId, uint marketValue, uint EarthquakeScore, uint zipcode , uint latitude, uint longitude) public onlyRole(STATE_ROLE) {
        
-	 Metadata memory metadata = new Metadata(
+	 Metadata memory metadata = Metadata(
 	 houseId,
-         marketValue,
+     marketValue,
 	 EarthquakeScore,
 	 zipcode,
 	 latitude,
@@ -62,7 +62,7 @@ contract DeedNFT is ERC721Enumerable, AccessControl {
 	 tokenIdToRealEstate[tokenId_] = metadata;
     }
 
-    function safeMint(address to, uint256 tokenId) public onlyRole(MINTER_ROLE) {
+    function safeMint(address to, uint256 tokenId) public onlyRole(STATE_ROLE) {
         _safeMint(to, tokenId);
     }
 
