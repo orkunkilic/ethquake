@@ -8,6 +8,7 @@ import {
   Route,
 } from "react-router-dom";
 import InsurePage from './pages/InsurePage';
+import IssuePage from './pages/IssuePage';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
@@ -15,6 +16,7 @@ root.render(
     <Routes>
       <Route path="/" element={<App />}/>
       <Route path="/insure" element={<InsurePage />}/>
+      <Route path="/issue" element={<IssuePage />}/>
     </Routes>
   </BrowserRouter>
 );
