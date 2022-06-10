@@ -134,12 +134,12 @@ contract Pool is Ownable {
                 totalPriceHouseGranted += nftCtc.getPrice(cr.houseId);
                 remainingHousesGranted += 1;
                 if(cr.denyVotes == 1){
-                    stakeCtc.slashInspector(cr.denyVotes[0]);
+                    stakeCtc.slashInspector(cr.denyVoters[0]);
                 }
             } else{
                 cr.status = RequestStatus.DENIED;
-                if(cr.grantvotes == 1){
-                    stakeCtc.rewardInspector(cr.grantVotes[0]);
+                if(cr.grantVotes == 1){
+                    stakeCtc.rewardInspector(cr.grantVoters[0]);
                 }
             }
             emit RequestVotingEnded(cr.grantVotes, cr.denyVotes);
