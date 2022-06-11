@@ -45,6 +45,11 @@ describe("Pool Contract", function (){
         giveApprovalTx = await StableCoin.connect(investor2).approve(Pool.address, ethers.utils.parseEther("99999999999999"));
         await giveApprovalTx.wait();
 
+        await (DeinsuranceToken.connect(inspector1).approve(Staking.address, ethers.utils.parseEther("99999999999999")));
+        await (DeinsuranceToken.connect(inspector2).approve(Staking.address, ethers.utils.parseEther("99999999999999")));
+        await (DeinsuranceToken.connect(inspector3).approve(Staking.address, ethers.utils.parseEther("99999999999999")));
+
+
     });
 
     describe("Workflow", function () {
@@ -58,6 +63,19 @@ describe("Pool Contract", function (){
             await (await StableCoin.transfer(inspector3.address, ethers.utils.parseEther("1000000"))).wait();
             await (await StableCoin.transfer(investor1.address, ethers.utils.parseEther("1000000"))).wait();
             await (await StableCoin.transfer(investor2.address, ethers.utils.parseEther("1000000"))).wait();
+
+            await (await DeinsuranceToken.transfer(Staking.address, ethers.utils.parseEther("970000")));
+
+            await (await DeinsuranceToken.transfer(inspector1.address, ethers.utils.parseEther("10000")));
+            await (await DeinsuranceToken.transfer(inspector2.address, ethers.utils.parseEther("10000")));
+            await (await DeinsuranceToken.transfer(inspector3.address, ethers.utils.parseEther("10000")));
+
+
+
+            await (await Staking.connect(inspector1).stake(ethers.utils.parseEther("10000")));
+            await (await Staking.connect(inspector2).stake(ethers.utils.parseEther("10000")));
+            await (await Staking.connect(inspector3).stake(ethers.utils.parseEther("10000")));
+
 
             const mintHouseTx = await DeedNFT.safeMint(hOwner1.address, 1, ethers.utils.parseEther("100000"), 13, 31, 1234, 5678);
             await mintHouseTx.wait();
@@ -182,7 +200,7 @@ describe("Pool Contract", function (){
 
                 it("can vote for house", async function () {
                     await expect(Pool.connect(inspector1).voteClaimRequest(1, true)).not.be.reverted;
-                    await expect(Pool.connect(inspector1).voteClaimRequest(1, false)).not.be.reverted;
+                    await expect(Pool.connect(inspector2).voteClaimRequest(1, false)).not.be.reverted;
                 });
 
                 it("can grant house if majority of inspectors vote ok", async function(){
@@ -190,7 +208,8 @@ describe("Pool Contract", function (){
                     await (await Pool.connect(inspector2).voteClaimRequest(1, true)).wait();
                     await (await Pool.connect(inspector3).voteClaimRequest(1, false)).wait();
 
-                    await expect(Pool.claimRequests[1].status).to.be.equal(Pool.RequestStatus.GRANTED);
+
+                    expect((await Pool.claimRequests(1)).status).to.be.equal(1); // status == GRANTED
 
                 });
 
@@ -198,8 +217,7 @@ describe("Pool Contract", function (){
                     await (await Pool.connect(inspector1).voteClaimRequest(1, false)).wait();
                     await (await Pool.connect(inspector2).voteClaimRequest(1, false)).wait();
                     await (await Pool.connect(inspector3).voteClaimRequest(1, true)).wait();
-
-                    await expect(Pool.claimRequests[1].status).to.be.equal(Pool.RequestStatus.DENIED);
+                    expect((await Pool.claimRequests(1)).status).to.be.equal(2); // status == DENIED
                 });
             });
         });
@@ -235,17 +253,26 @@ describe("Pool Contract", function (){
                 await (await Pool.connect(inspector2).voteClaimRequest(2, false)).wait();
                 await (await Pool.connect(inspector3).voteClaimRequest(2, false)).wait();
 
+                await (await Pool.demoEndInsurancePeriod()).wait();
+                await (await Pool.endInsurance()).wait();
+
+                await (await PoolToken.connect(investor1).approve(Pool.address, ethers.utils.parseEther("100"))).wait();
+                await (await PoolToken.connect(investor2).approve(Pool.address, ethers.utils.parseEther("100"))).wait();
+
+
 
             });
             describe("house owners claiming 'rewards'", function (){
                 it("should let granted houses owners claim.", async function (){
                     var beforeBalance = await StableCoin.balanceOf(hOwner1.address);
                     await expect(Pool.connect(hOwner1).claimAsHouseOwner(1)).not.to.be.reverted;
-                    await expect(StableCoin.balanceOf(hOwner1.getPoolTokenAddress)).to.be.greaterThan(beforeBalance);
+                    expect(await StableCoin.balanceOf(hOwner1.address)).to.be.above(beforeBalance);
                     
                 });
                 it("shouldn't let denied house owners claim.", async function (){
+                    var beforeBalance = await StableCoin.balanceOf(hOwner1.address);
                     await expect(Pool.connect(hOwner2).claimAsHouseOwner(2)).to.be.reverted;
+                    expect(await StableCoin.balanceOf(hOwner1.address)).to.be.equal(beforeBalance);
                 });
             });
     

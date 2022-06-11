@@ -173,7 +173,7 @@ contract Pool is Ownable {
     }
 
     function claimAsHouseOwner(uint256 houseId) external {
-        require(canClaim);
+        require(canClaim, "Can't claim yet. Insurance hasn't ended.");
         require(
             remainingHousesGranted > 0,
             "Houses can not be claimed anymore"
@@ -194,7 +194,7 @@ contract Pool is Ownable {
             nftCtc.getPrice(houseId)
         );
         totalAmountRegistered -= nftCtc.getPrice(houseId);
-        stableToken.transferFrom(address(this), msg.sender, claimable);
+        stableToken.transfer(msg.sender, claimable);
         housesInPool[houseId] = false;
         remainingHousesGranted -= 1;
     }
@@ -237,7 +237,7 @@ contract Pool is Ownable {
         uint256 claimable = (stableToken.balanceOf(address(this)) *
             ownedTokens) / 100;
         tokenCtc.transferFrom(msg.sender, address(0), ownedTokens);
-        stableToken.transferFrom(address(this), msg.sender, claimable);
+        stableToken.transfer(msg.sender, claimable);
     }
 
     function calculateTokenPrice(uint256 initalPoolVolume)
@@ -275,7 +275,7 @@ contract Pool is Ownable {
     }
 
     function demoEndInsurancePeriod() external onlyOwner {
-        startTime -= 400 days;
+        tokenSaleStart -= 400 days;
     }
 
 }
