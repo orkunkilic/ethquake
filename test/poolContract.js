@@ -26,8 +26,12 @@ describe("Pool Contract", function (){
         Staking = await (await ethers.getContractFactory("Staking")).deploy(DeinsuranceToken.address);
         await Staking.deployed();
 
+
         Pool = await (await ethers.getContractFactory("Pool")).deploy(DeedNFT.address, StableCoin.address, 10, 20, 10, 3, Staking.address);
         await Pool.deployed();
+
+        await (await Staking.addPool(Pool.address)).wait();
+
 
         let giveApprovalTx = await StableCoin.connect(hOwner1).approve(Pool.address, ethers.utils.parseEther("99999999999999"));
         await giveApprovalTx.wait();
@@ -227,25 +231,33 @@ describe("Pool Contract", function (){
                 await (await Pool.connect(inspector2).voteClaimRequest(1, true)).wait();
                 await (await Pool.connect(inspector3).voteClaimRequest(1, true)).wait();
 
-                await (await Pool.connect(inspector1).voteClaimRequest(1, false)).wait();
-                await (await Pool.connect(inspector2).voteClaimRequest(1, false)).wait();
-                await (await Pool.connect(inspector3).voteClaimRequest(1, false)).wait();
+                await (await Pool.connect(inspector1).voteClaimRequest(2, false)).wait();
+                await (await Pool.connect(inspector2).voteClaimRequest(2, false)).wait();
+                await (await Pool.connect(inspector3).voteClaimRequest(2, false)).wait();
 
 
             });
             describe("house owners claiming 'rewards'", function (){
                 it("should let granted houses owners claim.", async function (){
-
+                    var beforeBalance = await StableCoin.balanceOf(hOwner1.address);
+                    await expect(Pool.connect(hOwner1).claimAsHouseOwner(1)).not.to.be.reverted;
+                    await expect(StableCoin.balanceOf(hOwner1.getPoolTokenAddress)).to.be.greaterThan(beforeBalance);
+                    
                 });
                 it("shouldn't let denied house owners claim.", async function (){
-
+                    await expect(Pool.connect(hOwner2).claimAsHouseOwner(2)).to.be.reverted;
                 });
             });
     
             describe("investors claiming 'rewards'", function () {
                 it("should let investor claim after houses all claimed", async function () {
+                    await expect(Pool.connect(investor1).claimAsInsurer()).to.be.reverted;
 
+                    await (await Pool.connect(hOwner1).claimAsHouseOwner(1)).wait();
+
+                    await expect(Pool.connect(investor1).claimAsInsurer()).not.to.be.reverted;
                 });
+
             });
         });
     });
