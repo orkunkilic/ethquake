@@ -20,34 +20,34 @@ contract Pool is Ownable {
     IERC20 tokenCtc;
     IERC20 stableToken;
     Staking stakeCtc;
-    uint8 minPoolRisk;
-    uint8 maxPoolRisk;
-    uint8 entranceFeePerc;
-    uint8 inspectorPerCity;
+    uint8 public minPoolRisk;
+    uint8 public maxPoolRisk;
+    uint8 public entranceFeePerc;
+    uint8 public inspectorPerCity;
 
-    uint256 startTime;
-    uint256 tokenSaleStart;
-    bool canBuyTokens;
-    bool canClaim;
-    bool canInsurerClaim;
+    uint256 public startTime;
+    uint256 public tokenSaleStart;
+    bool public canBuyTokens;
+    bool public canClaim;
+    bool public canInsurerClaim;
 
-    uint256 totalAmountRegistered;
-    uint256 totalPriceHouseGranted;
-    uint256 remainingHousesGranted;
+    uint256 public totalAmountRegistered;
+    uint256 public totalPriceHouseGranted;
+    uint256 public remainingHousesGranted;
     // There are four time periods
     // 1. Pool house registration
     // 2. 1 year
     // 3. Calim for houses that are claimed.
     // 4. Collateral claim
 
-    uint8 soldPercentage;
-    uint256 totalPoolBalance;
-    uint256 totalSoldPoolBalance;
+    uint8 public soldPercentage;
+    uint256 public totalPoolBalance;
+    uint256 public totalSoldPoolBalance;
 
-    uint256 amountAtTheEnd;
-    uint256 amountLeftToInsurers;
+    uint256 public amountAtTheEnd;
+    uint256 public amountLeftToInsurers;
 
-    mapping(uint256 => ClaimRequest) public claimRequests; // houseId -> Claim Request
+    mapping(uint256 => ClaimRequest) public claimRequests; // tokenId -> Claim Request
     mapping(uint256 => address[]) internal zipCodeToInspectors;
     mapping(uint256 => bool) public housesInPool;
 
@@ -81,7 +81,7 @@ contract Pool is Ownable {
     }
 
     struct ClaimRequest {
-        uint256 houseId;
+        uint256 tokenId;
         RequestStatus status;
         uint8 grantVotes;
         uint8 denyVotes;
@@ -89,64 +89,60 @@ contract Pool is Ownable {
         address[3] denyVoters;
     }
 
-    function enterPool(uint256 houseId) external {
-        require(canEnterPool(houseId), "Can't enter the pool");
-        uint256 enteranceFee = calcEntranceFee(houseId);
-        stableToken.transferFrom(msg.sender, address(this), enteranceFee);
-        totalPoolBalance += enteranceFee;
-        totalAmountRegistered += nftCtc.getPrice(houseId);
-        housesInPool[houseId] = true;
-    }
-
-    function canEnterPool(uint256 houseId) internal view returns (bool) {
+    function enterPool(uint256 tokenId) external {
         require(
             (block.timestamp - startTime) <= 30 days,
             "Insurance period has ended"
         );
         require(
-            msg.sender == nftCtc.ownerOfHouse(houseId),
+            msg.sender == nftCtc.ownerOfHouse(tokenId),
             "You are not the owner of this house"
         );
-        uint8 houseRisk = nftCtc.getRisk(houseId);
+        uint8 houseRisk = nftCtc.getRisk(tokenId);
         uint8 noOfInspectors = uint8(
-            zipCodeToInspectors[nftCtc.getZipcode(houseId)].length
+            zipCodeToInspectors[nftCtc.getZipcode(tokenId)].length
         );
         require(noOfInspectors >= 3, "Not enough inspectors");
         require(
             houseRisk >= minPoolRisk && houseRisk <= maxPoolRisk,
             "House risk out of pool's boundaries"
         );
-        return true;
+        uint256 enteranceFee = calcEntranceFee(tokenId);
+        stableToken.transferFrom(msg.sender, address(this), enteranceFee);
+        totalPoolBalance += enteranceFee;
+        totalAmountRegistered += nftCtc.getPrice(tokenId);
+        housesInPool[tokenId] = true;
     }
 
-    function calcEntranceFee(uint256 houseId) public view returns (uint256) {
-        uint8 houseRisk = nftCtc.getRisk(houseId);
-        uint256 housePrice = nftCtc.getPrice(houseId);
-        return (houseRisk * housePrice) / 100; // for now
+
+    function calcEntranceFee(uint256 tokenId) public view returns (uint256) {
+        uint8 houseRisk = nftCtc.getRisk(tokenId);
+        uint256 housePrice = nftCtc.getPrice(tokenId);
+        return (houseRisk * housePrice) / 100; // for now when fix????
     }
 
-    function makeClaimRequest(uint256 houseId) external {
-        require(housesInPool[houseId], "House is not in pool");
+    function makeClaimRequest(uint256 tokenId) external {
+        require(housesInPool[tokenId], "House is not in pool");
         require(
-            claimRequests[houseId].houseId == 0,
+            claimRequests[tokenId].tokenId == 0,
             "Already has claim request!"
         );
-        address houseOwner = nftCtc.ownerOfHouse(houseId);
+        address houseOwner = nftCtc.ownerOfHouse(tokenId);
         require(
             houseOwner == msg.sender,
             "You are not the owner of this house"
         );
-        require(block.timestamp - startTime >= 30 days);
-        ClaimRequest storage cr = claimRequests[houseId];
-        cr.houseId = houseId;
+        require(block.timestamp - startTime >= 30 days, "Insurance period has not started");
+        ClaimRequest storage cr = claimRequests[tokenId];
+        cr.tokenId = tokenId;
         cr.status = RequestStatus.UNDETERMINED;
     }
 
     function voteClaimRequest(
-        uint256 houseId,
+        uint256 tokenId,
         bool vote
     ) external {
-        uint256 zipcode = nftCtc.getMetadata(houseId).zipCode;
+        uint256 zipcode = nftCtc.getMetadata(tokenId).zipCode;
         address[] memory inspectorsOfCity = zipCodeToInspectors[zipcode];
         bool isInspector;
         for (uint8 i = 0; i < inspectorsOfCity.length; i++) {
@@ -156,8 +152,8 @@ contract Pool is Ownable {
             }
         }
         require(isInspector, "You are not an inspector of the selected city");
-        ClaimRequest storage cr = claimRequests[houseId];
-        require(cr.houseId != 0, "Chosen house doesn't have any claim requests");
+        ClaimRequest storage cr = claimRequests[tokenId];
+        require(cr.tokenId != 0, "Chosen house doesn't have any claim requests");
         if (vote) {
             cr.grantVoters[cr.grantVotes] = msg.sender;
             cr.grantVotes++;
@@ -168,7 +164,7 @@ contract Pool is Ownable {
         if (cr.grantVotes + cr.denyVotes == inspectorPerCity) {
             if (cr.grantVotes > cr.denyVotes) {
                 cr.status = RequestStatus.GRANTED;
-                totalPriceHouseGranted += nftCtc.getPrice(cr.houseId);
+                totalPriceHouseGranted += nftCtc.getPrice(cr.tokenId);
                 //remainingHousesGranted += 1;
                 if (cr.denyVotes == 1) {
                     stakeCtc.slashInspector(cr.denyVoters[0]);
@@ -199,28 +195,28 @@ contract Pool is Ownable {
         return a <= b ? a : b;
     }
 
-    function claimAsHouseOwner(uint256 houseId) external {
+    function claimAsHouseOwner(uint256 tokenId) external {
         require(canClaim, "Can't claim yet. Insurance hasn't ended.");
         require(
-            msg.sender == nftCtc.ownerOfHouse(houseId),
+            msg.sender == nftCtc.ownerOfHouse(tokenId),
             "You are not the owner of the house"
         );
         require(
-            claimRequests[houseId].status != RequestStatus.CLAIMED,
+            claimRequests[tokenId].status != RequestStatus.CLAIMED,
             "Your are already claimed."
         );
         require(
-            claimRequests[houseId].status == RequestStatus.GRANTED,
+            claimRequests[tokenId].status == RequestStatus.GRANTED,
             "Your request hasn't been granted."
         );
         uint256 claimable = min(
-            nftCtc.getPrice(houseId) * amountAtTheEnd / totalPriceHouseGranted,
-            nftCtc.getPrice(houseId)
+            nftCtc.getPrice(tokenId) * amountAtTheEnd / totalPriceHouseGranted,
+            nftCtc.getPrice(tokenId)
         );
-        //totalAmountRegistered -= nftCtc.getPrice(houseId); // why the fuck we are removing it?
-        claimRequests[houseId].status = RequestStatus.CLAIMED;
+        //totalAmountRegistered -= nftCtc.getPrice(tokenId); // why the fuck we are removing it?
+        claimRequests[tokenId].status = RequestStatus.CLAIMED;
         stableToken.transfer(msg.sender, claimable);
-        //housesInPool[houseId] = false; // why the fuck we are removing house from pool?
+        //housesInPool[tokenId] = false; // why the fuck we are removing house from pool?
     }
 
     function addInspector(uint256 zipCode, address inspector)

@@ -49,20 +49,20 @@ contract DeedNFT is ERC721Enumerable, AccessControl {
         return houseIdToTokenId[tokenId];
     }
 
-    function getZipcode(uint256 houseId) public view returns (uint256) {
-        return metadata[tokenIdByHouseId(houseId)].zipCode;
+    function getZipcode(uint256 tokenId) public view returns (uint256) {
+        return metadata[tokenId].zipCode;
     }
 
-    function getRisk(uint256 houseId) public view returns (uint8) {
-        return metadata[tokenIdByHouseId(houseId)].riskScore;
+    function getRisk(uint256 tokenId) public view returns (uint8) {
+        return metadata[tokenId].riskScore;
     }
 
-    function getPrice(uint256 houseId) public view returns (uint256) {
-        return metadata[tokenIdByHouseId(houseId)].marketValue;
+    function getPrice(uint256 tokenId) public view returns (uint256) {
+        return metadata[tokenId].marketValue;
     }
 
-    function ownerOfHouse(uint256 houseId) public view returns (address) {
-        uint256 tokenId = houseIdToTokenId[houseId];
+    function ownerOfHouse(uint256 tokenId) public view returns (address) {
+        uint256 tokenId = tokenId;
         return ownerOf(tokenId);
     }
 
@@ -86,7 +86,6 @@ contract DeedNFT is ERC721Enumerable, AccessControl {
         int256 longitude
     ) public onlyRole(MINTER_ROLE) {
         uint256 tokenId = _tokenIdCounter.current();
-        _tokenIdCounter.increment();
         _safeMint(to, tokenId);
         houseIdToTokenId[houseId] = tokenId;
         metadata[tokenId] = Metadata(
@@ -97,6 +96,7 @@ contract DeedNFT is ERC721Enumerable, AccessControl {
             latitude,
             longitude
         );
+        _tokenIdCounter.increment();
         emit MintDeed(msg.sender, tokenId, houseId);
     }
 
