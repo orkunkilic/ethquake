@@ -14,7 +14,7 @@ describe("Pool Contract", function (){
     beforeEach(async function (){
         [cOwner, hOwner1, hOwner2, inspector1, inspector2, inspector3, investor1, investor2] = await ethers.getSigners();
 
-        DeedNFT = await (await ethers.getContractFactory("DeedNFT")).deploy("0xdD870fA1b7C4700F2BD7f44238821C26f7392148");
+        DeedNFT = await (await ethers.getContractFactory("DeedNFT")).deploy();
         await DeedNFT.deployed();
 
         StableCoin = await (await ethers.getContractFactory("ERC20Token")).deploy();
