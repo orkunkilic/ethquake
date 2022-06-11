@@ -127,36 +127,71 @@ describe("Pool Contract", function (){
 
         });
 
-        describe("investments", function (){
 
-        });
+        describe("pool entrance closed.", function (){
+            beforeEach(async function (){
+                await (await Pool.demoEndPoolEntrance()).wait();
+                await (await Pool.startTokenSale()).wait();
 
-        describe("house owners claim", function () {
-            it("shouldn't let houses out of zipcode.", async function () {
-
+                await (await StableCoin.transfer(investor1.address, ethers.utils.parseEther("1000000000"))).wait();
+                await (await StableCoin.transfer(investor2.address, ethers.utils.parseEther("1000000000"))).wait();
             });
 
-            it("shouldn't let home owner make double claim request", async function (){
+            describe("investors", function(){
+                it("should let investors buy pool tokens", async function (){
+                    await (await Pool.connect(investor1).buyPoolPartially(50)).wait()
+                    await (await Pool.connect(investor2).buyPoolPartially(50)).wait()
+                    var balance = await (await Pool.getPoolToken().balanceOf(investor1.address));
+                    console.log(balance);
+                    await expect().to.be.equal(50); // both balances for pool token be 50
+                });
+
+                it("investors can't claim yet", async function () {
+
+                });
+            });
+
+            describe("house owners", function () {
+                it("can claim damages.", async function () {
+
+                });
                 
+                
+                it("can't double claim damages.", async function (){
+                    
+    
+                });
+            });
 
+            describe("inspectors", function (){
+                it("can vote for house", async function () {
+
+                });
+
+                it("can grant house if majority of inspectors vote ok", async function(){
+
+                });
+
+                it("can deny house if majorty of inspectors vote not ok", async function (){
+
+                });
+
+                it("shouldn't let vote for houses out of zipcode.", async function () {
+    
+                });
             });
         });
+
 
         describe("pool ends", function() {
+            describe("house owners claiming 'rewards'", function (){
 
+            });
+    
+            describe("investors claiming 'rewards'", function () {
+    
+            });
         });
-
-        describe("house owners claiming 'rewards'", function (){
-
-        });
-
-        describe("investors claiming 'rewards'", function () {
-
-        });
-
-
-
-
     });
 
 
