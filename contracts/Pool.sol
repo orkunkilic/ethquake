@@ -8,10 +8,15 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "./DeedNFT.sol";
 import "./Stake.sol";
 import "./PoolToken.sol";
+import '@chainlink/contracts/src/v0.8/ChainlinkClient.sol';
+import '@chainlink/contracts/src/v0.8/ConfirmedOwner.sol';
 
 
 
-contract Pool is Ownable {
+
+contract Pool is Ownable, ChainlinkClient, ConfirmedOwner {
+    using Chainlink for Chainlink.Request;
+
     DeedNFT nftCtc;
     IERC20 tokenCtc;
     IERC20 stableToken;
@@ -33,6 +38,10 @@ contract Pool is Ownable {
     // 3. Calim for houses that are claimed.
     // 4. Collateral claim
 
+    uint256 public volume;
+    bytes32 private jobId;
+    uint256 private fee;
+
     mapping(uint256 => ClaimRequest) public claimRequests; // houseId -> Claim Request
     mapping(uint256 => address[]) internal zipCodeToInspectors;
     mapping(uint256 => bool) public housesInPool;
@@ -45,7 +54,7 @@ contract Pool is Ownable {
         uint8 _entranceFeePerc,
         uint8 _inspectorPerCity,
         Staking _stakeCtc
-    ) {
+    ) ConfirmedOwner(msg.sender) {
         nftCtc = _nftCtc;
         // tokenCtc = _tokenCtc;
         stableToken = _stableToken;
@@ -55,6 +64,11 @@ contract Pool is Ownable {
         inspectorPerCity = _inspectorPerCity;
         startTime = block.timestamp;
         stakeCtc = _stakeCtc;
+
+        setChainlinkToken(0xa36085F69e2889c224210F603D836748e7dC0088); // Kovan testnet
+        setChainlinkOracle(0x74EcC8Bdeb76F2C6760eD2dc8A46ca5e581fA656);
+        jobId = 'ca98366cc7314957b8c012c72f05aeeb';
+        fee = (1 * 10 ** 18) / 10;
     }
 
     event RequestVotingEnded(uint8 grants, uint8 denies);
@@ -122,6 +136,8 @@ contract Pool is Ownable {
             "You are not the owner of this house"
         );
         require(block.timestamp - startTime >= 30 days);
+        Chainlink.Request memory req = buildChainlinkRequest(jobId, address(this), this.fulfill.selector);
+        req.add('get', 'http://localhost:3001/earthquake');
         ClaimRequest storage cr = claimRequests[houseId];
         cr.houseId = houseId;
         cr.status = RequestStatus.UNDETERMINED;
@@ -276,5 +292,10 @@ contract Pool is Ownable {
     function demoEndInsurancePeriod() external onlyOwner {
         startTime -= 400 days;
     }
-
+    
+    event RequestVolume(bytes32 indexed requestId, uint256 indexed data);
+    function fulfill(bytes32 _requestId, uint256 _volume) public recordChainlinkFulfillment(_requestId) {
+        emit RequestVolume(_requestId, _volume);
+        volume = _volume;
+    }
 }
