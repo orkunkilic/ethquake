@@ -30,7 +30,9 @@ app.get('/', async (req, res) => {
     console.log(url)
     const r = await axios(url)
     if(r.data.features.length > 0) {
-        res.send(true)
+        res.json({
+            result
+        })
     } else {
         res.send(false)
     }

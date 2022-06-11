@@ -130,7 +130,7 @@ describe("Pool Contract", function (){
             it("shouldn't let inspectors vote", async function (){
                 await (await Pool.connect(hOwner1).enterPool(1)).wait();
 
-                await expect(Pool.connect(inspector1).voteClaimRequest(1, true, 31)).to.be.reverted;
+                await expect(Pool.connect(inspector1).voteForClaimRequest(1, true, 31)).to.be.reverted;
                 
                 var claimReq = await Pool.claimRequests(1);
                 expect(claimReq.denyVotes + claimReq.grantVotes).to.be.equal(0);
@@ -139,18 +139,18 @@ describe("Pool Contract", function (){
             it("shouldn't let house owners claim 'reward'.", async function () {
                 await (await Pool.connect(hOwner1).enterPool(1)).wait();
                 var oldBalance = await StableCoin.balanceOf(hOwner1.address);
-                await expect(Pool.connect(hOwner1).claimAsHouseOwner(1)).to.be.reverted;
+                await expect(Pool.connect(hOwner1).claimFundsForHouseOwner(1)).to.be.reverted;
                 var newBalance = await StableCoin.balanceOf(hOwner1.address);
                 expect(newBalance).to.be.equal(oldBalance);
             });
 
             it("shouldn't let investors buy pool tokens", async function (){
-                await expect(Pool.connect(investor1).buyPoolPartially(10)).to.be.reverted;
+                await expect(Pool.connect(investor1).buyPoolTokens(10)).to.be.reverted;
             });
 
             it("shouldn't let investors claim", async function (){
                 var oldBalance = await StableCoin.balanceOf(investor1.address);
-                await expect(Pool.connect(investor1).claimAsInsurer()).to.be.reverted;
+                await expect(Pool.connect(investor1).claimFundsForInsurer()).to.be.reverted;
                 var newBalance = await StableCoin.balanceOf(investor1.address);
                 expect(newBalance).to.be.equal(oldBalance);
             });
@@ -159,7 +159,7 @@ describe("Pool Contract", function (){
                 // await (await Pool.demoEndPoolEntrance()).wait();
                 await Pool.provider.send("evm_increaseTime", [60 * 60 * 24 * 31]);
 
-                await expect(Pool.startTokenSale()).not.to.be.reverted;
+                await expect(Pool.endPoolRegistrationPeriod()).not.to.be.reverted;
                 expect(await Pool.canBuyTokens()).to.be.equal(true);
             });
 
@@ -171,7 +171,7 @@ describe("Pool Contract", function (){
                 await (await Pool.connect(hOwner1).enterPool(1)).wait();
                 // await (await Pool.demoEndPoolEntrance()).wait();
                 await Pool.provider.send("evm_increaseTime", [60 * 60 * 24 * 31]);
-                await (await Pool.startTokenSale()).wait();
+                await (await Pool.endPoolRegistrationPeriod()).wait();
 
                 await (await StableCoin.transfer(investor1.address, ethers.utils.parseEther("1000000000000"))).wait();
                 await (await StableCoin.transfer(investor2.address, ethers.utils.parseEther("1000000000000"))).wait();
@@ -182,8 +182,8 @@ describe("Pool Contract", function (){
 
             describe("investors", function(){
                 it("should let investors buy pool tokens", async function (){
-                    await (await Pool.connect(investor1).buyPoolPartially(50)).wait();
-                    await (await Pool.connect(investor2).buyPoolPartially(50)).wait();
+                    await (await Pool.connect(investor1).buyPoolTokens(50)).wait();
+                    await (await Pool.connect(investor2).buyPoolTokens(50)).wait();
                     var balance = await PoolToken.balanceOf(investor1.address);
                     var balance2 = await PoolToken.balanceOf(investor2.address);
                     expect(balance).to.be.equal(50);
@@ -191,9 +191,9 @@ describe("Pool Contract", function (){
                 });
 
                 it("investors can't claim yet", async function () {
-                    await (await Pool.connect(investor1).buyPoolPartially(50)).wait()
+                    await (await Pool.connect(investor1).buyPoolTokens(50)).wait()
                     var oldBalance = await StableCoin.balanceOf(investor1.address);
-                    await expect(Pool.claimAsInsurer()).to.be.reverted;
+                    await expect(Pool.claimFundsForInsurer()).to.be.reverted;
                     var newBalance = await StableCoin.balanceOf(investor1.address);
                     expect(newBalance).to.be.equal(oldBalance);
                 });
@@ -220,17 +220,17 @@ describe("Pool Contract", function (){
                 });
 
                 it("can vote for house", async function () {
-                    await expect(Pool.connect(inspector1).voteClaimRequest(1, true)).not.be.reverted;
-                    await expect(Pool.connect(inspector2).voteClaimRequest(1, false)).not.be.reverted;
+                    await expect(Pool.connect(inspector1).voteForClaimRequest(1, true)).not.be.reverted;
+                    await expect(Pool.connect(inspector2).voteForClaimRequest(1, false)).not.be.reverted;
                     var claimReq = await Pool.claimRequests(1);
                     expect(claimReq.grantVotes).to.be.equal(1);
                     expect(claimReq.denyVotes).to.be.equal(1);
                 });
 
                 it("can grant house if majority of inspectors vote ok", async function(){
-                    await (await Pool.connect(inspector1).voteClaimRequest(1, true)).wait();
-                    await (await Pool.connect(inspector2).voteClaimRequest(1, true)).wait();
-                    await (await Pool.connect(inspector3).voteClaimRequest(1, false)).wait();
+                    await (await Pool.connect(inspector1).voteForClaimRequest(1, true)).wait();
+                    await (await Pool.connect(inspector2).voteForClaimRequest(1, true)).wait();
+                    await (await Pool.connect(inspector3).voteForClaimRequest(1, false)).wait();
 
 
                     expect((await Pool.claimRequests(1)).status).to.be.equal(1); // status == GRANTED
@@ -238,9 +238,9 @@ describe("Pool Contract", function (){
                 });
 
                 it("can deny house if majorty of inspectors vote not ok", async function (){
-                    await (await Pool.connect(inspector1).voteClaimRequest(1, false)).wait();
-                    await (await Pool.connect(inspector2).voteClaimRequest(1, false)).wait();
-                    await (await Pool.connect(inspector3).voteClaimRequest(1, true)).wait();
+                    await (await Pool.connect(inspector1).voteForClaimRequest(1, false)).wait();
+                    await (await Pool.connect(inspector2).voteForClaimRequest(1, false)).wait();
+                    await (await Pool.connect(inspector3).voteForClaimRequest(1, true)).wait();
                     expect((await Pool.claimRequests(1)).status).to.be.equal(2); // status == DENIED
                 });
             });
@@ -256,27 +256,27 @@ describe("Pool Contract", function (){
 
                 // await (await Pool.demoEndPoolEntrance()).wait();
                 await Pool.provider.send("evm_increaseTime", [60 * 60 * 24 * 31]);
-                await (await Pool.startTokenSale()).wait();
+                await (await Pool.endPoolRegistrationPeriod()).wait();
 
                 await (await StableCoin.transfer(investor1.address, ethers.utils.parseEther("1000000000000"))).wait();
                 await (await StableCoin.transfer(investor2.address, ethers.utils.parseEther("1000000000000"))).wait();
 
                 PoolToken = await ethers.getContractAt("PoolToken", await Pool.getPoolTokenAddress());
 
-                await (await Pool.connect(investor1).buyPoolPartially(50)).wait();
-                await (await Pool.connect(investor2).buyPoolPartially(50)).wait();
+                await (await Pool.connect(investor1).buyPoolTokens(50)).wait();
+                await (await Pool.connect(investor2).buyPoolTokens(50)).wait();
 
 
                 await (await Pool.connect(hOwner1).makeClaimRequest(1)).wait();
                 await (await Pool.connect(hOwner2).makeClaimRequest(2)).wait();
 
-                await (await Pool.connect(inspector1).voteClaimRequest(1, true)).wait();
-                await (await Pool.connect(inspector2).voteClaimRequest(1, true)).wait();
-                await (await Pool.connect(inspector3).voteClaimRequest(1, true)).wait();
+                await (await Pool.connect(inspector1).voteForClaimRequest(1, true)).wait();
+                await (await Pool.connect(inspector2).voteForClaimRequest(1, true)).wait();
+                await (await Pool.connect(inspector3).voteForClaimRequest(1, true)).wait();
 
-                await (await Pool.connect(inspector1).voteClaimRequest(2, false)).wait();
-                await (await Pool.connect(inspector2).voteClaimRequest(2, false)).wait();
-                await (await Pool.connect(inspector3).voteClaimRequest(2, false)).wait();
+                await (await Pool.connect(inspector1).voteForClaimRequest(2, false)).wait();
+                await (await Pool.connect(inspector2).voteForClaimRequest(2, false)).wait();
+                await (await Pool.connect(inspector3).voteForClaimRequest(2, false)).wait();
 
                 // await (await Pool.demoEndInsurancePeriod()).wait();
                 await Pool.provider.send("evm_increaseTime", [60 * 60 * 24 * 400]);
@@ -287,23 +287,23 @@ describe("Pool Contract", function (){
             describe("house owners claiming 'rewards'", function (){
                 it("should let granted houses owners claim.", async function (){
                     var oldBalance = await StableCoin.balanceOf(hOwner1.address);
-                    await expect(Pool.connect(hOwner1).claimAsHouseOwner(1)).not.to.be.reverted;
+                    await expect(Pool.connect(hOwner1).claimFundsForHouseOwner(1)).not.to.be.reverted;
                     var newBalance = await StableCoin.balanceOf(hOwner1.address);
                     expect(newBalance).to.be.above(oldBalance);
                     
                 });
                 it("shouldn't let denied house owners claim.", async function (){
                     var beforeBalance = await StableCoin.balanceOf(hOwner1.address);
-                    await expect(Pool.connect(hOwner2).claimAsHouseOwner(2)).to.be.reverted;
+                    await expect(Pool.connect(hOwner2).claimFundsForHouseOwner(2)).to.be.reverted;
                     expect(await StableCoin.balanceOf(hOwner1.address)).to.be.equal(beforeBalance);
                 });
 
                 
                 it("should let investor claim after house owners all claimed", async function () {
                     
-                    await expect(Pool.connect(investor1).claimAsInsurer()).to.be.reverted;
+                    await expect(Pool.connect(investor1).claimFundsForInsurer()).to.be.reverted;
 
-                    await (await Pool.connect(hOwner1).claimAsHouseOwner(1)).wait();
+                    await (await Pool.connect(hOwner1).claimFundsForHouseOwner(1)).wait();
                     // await (await Pool.demoEndPoolEntrance()).wait();
                     await Pool.provider.send("evm_increaseTime", [60 * 60 * 24 * 31]);
                     await (await Pool.endClaimPeriod()).wait();
@@ -312,7 +312,7 @@ describe("Pool Contract", function (){
                     await (await PoolToken.connect(investor1).approve(Pool.address, ethers.utils.parseEther("100"))).wait();
                     await (await PoolToken.connect(investor2).approve(Pool.address, ethers.utils.parseEther("100"))).wait();
 
-                    await expect(Pool.connect(investor1).claimAsInsurer()).not.to.be.reverted;
+                    await expect(Pool.connect(investor1).claimFundsForInsurer()).not.to.be.reverted;
                     var newBalance = await PoolToken.balanceOf(investor1.address);
                     expect(newBalance).to.be.equal(0);
                 });

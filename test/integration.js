@@ -75,9 +75,9 @@ describe("Pool contract", function () {
 
         console.log(await pool.connect(houseOwner).claimRequests(1));
 
-        await pool.connect(ins1).voteClaimRequest(1, true);
-        await pool.connect(ins2).voteClaimRequest(1, true);
-        await pool.connect(ins3).voteClaimRequest(1, false);
+        await pool.connect(ins1).voteForClaimRequest(1, true);
+        await pool.connect(ins2).voteForClaimRequest(1, true);
+        await pool.connect(ins3).voteForClaimRequest(1, false);
 
         console.log(await pool.connect(houseOwner).claimRequests(1));
         console.log(await staking.stakeDetails(ins1.address));
@@ -93,7 +93,7 @@ describe("Pool contract", function () {
         console.log(await pool.amountAtTheEnd());
         console.log(await stableCoin.balanceOf(pool.address));
 
-        await pool.connect(houseOwner).claimAsHouseOwner(1); 
+        await pool.connect(houseOwner).claimFundsForHouseOwner(1); 
 
         console.log(await stableCoin.balanceOf(pool.address));
         
