@@ -305,13 +305,13 @@ contract Pool is Ownable {
         amountLeftToInsurers = stableToken.balanceOf(address(this));
     } 
 
-    function demoEndPoolEntrance() external onlyOwner {
-        startTime -= 31 days;
-    }
+    // function demoEndPoolEntrance() external onlyOwner {
+    //     startTime -= 31 days;
+    // }
 
-    function demoEndInsurancePeriod() external onlyOwner {
-        tokenSaleStart -= 400 days;
-    }
+    // function demoEndInsurancePeriod() external onlyOwner {
+    //     tokenSaleStart -= 400 days;
+    // }
 
     function getPoolTokenAddress() public view returns(address){
         return address(tokenCtc);
