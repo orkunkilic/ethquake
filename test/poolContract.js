@@ -27,23 +27,23 @@ describe("Pool Contract", function (){
         Pool = await (await ethers.getContractFactory("Pool")).deploy(DeedNFT.address, StableCoin.address, 10, 20, 10, 3, Staking.address);
         await Pool.deployed();
 
+        let giveApprovalTx = await StableCoin.connect(hOwner1).approve(Pool.address, ethers.utils.parseEther("99999999999999"));
+        await giveApprovalTx.wait();
+
+        giveApprovalTx = await StableCoin.connect(hOwner2).approve(Pool.address, ethers.utils.parseEther("99999999999999"));
+        await giveApprovalTx.wait();
+        
+        giveApprovalTx = await StableCoin.connect(investor1).approve(Pool.address, ethers.utils.parseEther("99999999999999"));
+        await giveApprovalTx.wait();
+
+        giveApprovalTx = await StableCoin.connect(investor2).approve(Pool.address, ethers.utils.parseEther("99999999999999"));
+        await giveApprovalTx.wait();
+
     });
 
     describe("Workflow", function () {
 
         beforeEach(async function () {
-            let giveApprovalTx = await StableCoin.connect(hOwner1).approve(Pool.address, ethers.utils.parseEther("1000000"));
-            await giveApprovalTx.wait();
-
-            giveApprovalTx = await StableCoin.connect(hOwner2).approve(Pool.address, ethers.utils.parseEther("1000000"));
-            await giveApprovalTx.wait();
-            
-            giveApprovalTx = await StableCoin.connect(investor1).approve(Pool.address, ethers.utils.parseEther("1000000"));
-            await giveApprovalTx.wait();
-
-            giveApprovalTx = await StableCoin.connect(investor2).approve(Pool.address, ethers.utils.parseEther("1000000"));
-            await giveApprovalTx.wait();
-
             await (await StableCoin.mint(ethers.utils.parseEther("10000000000000"))).wait();
             await (await StableCoin.transfer(hOwner1.address, ethers.utils.parseEther("1000000"))).wait();
             await (await StableCoin.transfer(hOwner2.address, ethers.utils.parseEther("1000000"))).wait();
@@ -141,9 +141,9 @@ describe("Pool Contract", function (){
                 it("should let investors buy pool tokens", async function (){
                     await (await Pool.connect(investor1).buyPoolPartially(50)).wait()
                     await (await Pool.connect(investor2).buyPoolPartially(50)).wait()
-                    var balance = await (await Pool.getPoolToken().balanceOf(investor1.address));
+                    var balance = await (await Pool.getPoolToken().balanceOf(investor1.address)).wait();
                     console.log(balance);
-                    await expect().to.be.equal(50); // both balances for pool token be 50
+                    await expect(balance).to.be.equal(50); // both balances for pool token be 50
                 });
 
                 it("investors can't claim yet", async function () {

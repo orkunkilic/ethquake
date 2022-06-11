@@ -215,16 +215,15 @@ contract Pool is Ownable {
     }
 
     // each amount represents 1 / 100
-    function buyPoolPartially(uint8 amount) external payable {
+    function buyPoolPartially(uint8 amount) external {
         require(canBuyTokens, "Cannot buy pool tokens yet!");
-        uint256 price = calculateTokenPrice(amount, totalAmountRegistered);
+        uint256 price = calculateTokenPrice(totalAmountRegistered);
         uint256 oldBalance = stableToken.balanceOf(address(this));
-        stableToken.transferFrom(
-            msg.sender,
+        stableToken.transfer(
             address(this),
             price * amount - oldBalance
         );
-        tokenCtc.transferFrom(address(tokenCtc), msg.sender, amount);
+        tokenCtc.transferFrom(address(this), msg.sender, amount);
     }
 
     function claimAsInsurer() external {
@@ -243,13 +242,11 @@ contract Pool is Ownable {
         stableToken.transferFrom(address(this), msg.sender, claimable);
     }
 
-    function calculateTokenPrice(uint8 percentage, uint256 initalPoolVolume)
+    function calculateTokenPrice(uint256 initalPoolVolume)
         internal view
         returns (uint256)
     {
-        return initalPoolVolume * 
-        (percentage + (2 * (block.timestamp - tokenSaleStart) / 30 days)) /
-        100;
+        return initalPoolVolume * (200 - (minPoolRisk + maxPoolRisk) / 2) / 100;
     }
 
     function getPoolToken() public view returns(IERC20) {
