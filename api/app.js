@@ -63,47 +63,74 @@ app.post('/nft/issue', async (req, res) => {
 
 app.post('/nft/transfer', async (req, res) => {
     // should have a middleware to check origin
-    const { tokenId } = req.body
+    const { tokenId, address, signature, receiverAddress } = req.body
     let data
-    try {
-        data = db.getData("/" + tokenId)
-    } catch (error) {
-        db.push(`/`, {
-            [tokenId]: {
-                owner: {
-                    address: req.body.address, 
-                    signature: req.body.signature
-                },
-                receiver: {
-                    address: req.body.receiver,
+
+    if(receiverAddress) { // then it is a owner request
+        try {
+            data = db.getData("/" + tokenId)
+            res.json({
+                success: false,
+                message: "You already have a pending transfer request!"
+            })
+        } catch (error) {
+            db.push(`/`, {
+                [tokenId]: {
+                    owner: {
+                        address,
+                        signature
+                    },
+                    receiver: {
+                        address: req.body.receiverAddress,
+                    }
                 }
+            })
+            res.json({
+                success: true,
+                message: "Transfer request sent!"
+            })
+        }
+    }
+    else { // then it is a receiver request
+        try {
+            data = db.getData("/" + tokenId)
+
+            if(data.receiver.address != address) {
+                res.json({
+                    success: false,
+                    message: "You are not the receiver of this transfer request!"
+                })
             }
-        })
-        res.send("saved")
+        
+            const provider = new ethers.providers.JsonRpcProvider(RPC_URL)
+        
+            const wallet = new ethers.Wallet(PRIVATE_KEY, provider)
+        
+            const contract = new ethers.Contract(NFT_ADDRESS, Deed_NFT_ABI, wallet)
+        
+            const unsignedTx = await contract.populateTransaction.transfer(
+                data.owner.address,
+                address,
+                tokenId, 
+                data.owner.signature, 
+                signature
+            )
+        
+            const signedTx = await wallet.signTransaction(unsignedTx)
+        
+            const tx = await provider.sendTransaction(signedTx)
+        
+            res.json({
+                success: true,
+                message: tx.hash
+            })
+        } catch (error) {
+            res.json({
+                success: false,
+                message: "Invalid transfer request!"
+            })
+        }
     }
-
-    if(data.receiver.address != req.body.address) {
-        res.send("You are not the receiver!")
-    }
-
-    const provider = new ethers.providers.JsonRpcProvider(RPC_URL)
-
-    const wallet = new ethers.Wallet(PRIVATE_KEY, provider)
-
-    const contract = new ethers.Contract(NFT_ADDRESS, Deed_NFT_ABI, wallet)
-
-    const unsignedTx = await contract.populateTransaction.transfer(data.owner.ownerAddress,
-        data.receiver.address,
-        req.body.tokenId, 
-        data.owner.ownerSignature, 
-        req.body.signature
-    )
-
-    const signedTx = await wallet.signTransaction(unsignedTx)
-
-    const tx = await provider.sendTransaction(signedTx)
-
-    res.send(tx.hash)
 }) 
 
 app.listen(port, () => {

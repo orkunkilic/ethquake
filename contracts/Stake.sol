@@ -13,7 +13,7 @@ contract Staking is Ownable {
     mapping(address => bool) pools;
     mapping(address => StakeDetail) stakeDetails;
 
-    uint256 public STAKE_AMOUNT = 10_000 * 10**18;
+    uint256 public STAKE_AMOUNT = 100 * 10**18;
 
     struct StakeDetail {
         uint256 amountStaked;
@@ -28,10 +28,6 @@ contract Staking is Ownable {
 
     function addPool(address pool) public onlyOwner {
         pools[pool] = true;
-        token.approve(
-            pool,
-            0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
-        );
     }
 
     function stake(uint256 amount) public {
