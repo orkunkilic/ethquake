@@ -1,17 +1,25 @@
 const express = require('express')
+const bodyParser = require('body-parser')
 const axios = require('axios')
 const { ethers } = require('dotenv')
 require('dotenv').config()
 
+const { JsonDB } = require('node-json-db');
+const { Config } = require('node-json-db/dist/lib/JsonDBConfig');
+
+const db = new JsonDB(new Config("db.json", true, true, '/'));
+
 const app = express()
-const port = 3000
+const port = 3001
+
+app.use(bodyParser.json())
+app.use(bodyParser.urlencoded({ extended: true }))
 
 const NFT_ADDRESS = '0x0'
 const Deed_NFT_ABI = require('./DeedNFT.json')
 
 const RPC_URL = process.env.RPC_URL
 const PRIVATE_KEY = process.env.PRIVATE_KEY
-
 
 app.get('/', async (req, res) => {
     date = new Date()
@@ -55,20 +63,48 @@ app.post('/nft/issue', async (req, res) => {
 
 app.post('/nft/transfer', async (req, res) => {
     // should have a middleware to check origin
+    const { tokenId } = req.body
+    let data
+    try {
+        data = db.getData("/" + tokenId)
+    } catch (error) {
+        db.push(`/`, {
+            [tokenId]: {
+                owner: {
+                    address: req.body.address, 
+                    signature: req.body.signature
+                },
+                receiver: {
+                    address: req.body.receiver,
+                }
+            }
+        })
+        res.send("saved")
+    }
+
+    if(data.receiver.address != req.body.address) {
+        res.send("You are not the receiver!")
+    }
 
     const provider = new ethers.providers.JsonRpcProvider(RPC_URL)
+
     const wallet = new ethers.Wallet(PRIVATE_KEY, provider)
 
     const contract = new ethers.Contract(NFT_ADDRESS, Deed_NFT_ABI, wallet)
 
-    const unsignedTx = await contract.populateTransaction.transfer(req.body.owner, req.body.receiver, req.body.tokenId, req.body.ownerSignature, req.body.receiverSignature)
+    const unsignedTx = await contract.populateTransaction.transfer(data.owner.ownerAddress,
+        data.receiver.address,
+        req.body.tokenId, 
+        data.owner.ownerSignature, 
+        req.body.signature
+    )
 
     const signedTx = await wallet.signTransaction(unsignedTx)
 
     const tx = await provider.sendTransaction(signedTx)
 
     res.send(tx.hash)
-})
+}) 
 
 app.listen(port, () => {
   console.log(`API listening on port ${port}`)

@@ -4,12 +4,15 @@ pragma solidity ^0.8.14;
 
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
+import "@openzeppelin/contracts/utils/Counters.sol";
 
-contract DeedNFT is ERC721Enumerable, AccessControl {    
-    bytes32 public constant NOTARY_ROLE = keccak256("NOTARY_ROLE");
+contract DeedNFT is ERC721Enumerable, AccessControl {
+    using Counters for Counters.Counter;
+
+    Counters.Counter private _tokenIdCounter;
+
     bytes32 public constant STATE_ROLE = keccak256("STATE_ROLE");
     bytes32 public constant OWNER_ROLE = keccak256("OWNER_ROLE");
-
 
     /*
 	OUR ADDRESS STANDART
@@ -27,69 +30,153 @@ contract DeedNFT is ERC721Enumerable, AccessControl {
     
     */
     struct Metadata {
-    uint houseId;
-    uint marketValue;
-    uint riskScore;
-    uint zipCode;
-    int latitude;
-    int longitude;
+        uint256 houseId;
+        uint256 marketValue;
+        uint8 riskScore;
+        uint256 zipCode;
+        int256 latitude;
+        int256 longitude;
     }
-    
-    mapping(uint => Metadata) public tokenIdToRealEstate;
-    mapping(uint => uint) public houseIdToTokenId;
 
-    constructor(address houseOwner, address notary) ERC721("MyToken", "MTK") {
+    mapping(uint256 => Metadata) public tokenIdToRealEstate;
+    mapping(uint256 => uint256) public houseIdToTokenId;
+
+    constructor(address houseOwner) ERC721("MyToken", "MTK") {
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _grantRole(STATE_ROLE, msg.sender);
-	_grantRole(NOTARY_ROLE, notary);
-	_grantRole(OWNER_ROLE, houseOwner);
+        _grantRole(OWNER_ROLE, houseOwner);
     }
 
-    function getMetadata(uint tokenId_) public view returns(Metadata memory) {
-    	return tokenIdToRealEstate[tokenId_];
+    function getMetadata(uint256 tokenId_)
+        public
+        view
+        returns (Metadata memory)
+    {
+        return tokenIdToRealEstate[tokenId_];
     }
 
-    function tokenIdByHouseId(uint tokenId) public view returns(uint){
-    	return houseIdToTokenId[tokenId];
+    function tokenIdByHouseId(uint256 tokenId) public view returns (uint256) {
+        return houseIdToTokenId[tokenId];
     }
 
-    function getZipcode(uint houseId) public view returns(uint){
-	return tokenIdToRealEstate[tokenIdByHouseId(houseId)].zipCode;
+    function getZipcode(uint256 houseId) public view returns (uint256) {
+        return tokenIdToRealEstate[tokenIdByHouseId(houseId)].zipCode;
     }
-   
-    function getRisk(uint houseId) public view returns(uint){
+
+    function getRisk(uint256 houseId) public view returns (uint8) {
         return tokenIdToRealEstate[tokenIdByHouseId(houseId)].riskScore;
     }
 
-    function getPrice(uint houseId) public view returns(uint){
+    function getPrice(uint256 houseId) public view returns (uint256) {
         return tokenIdToRealEstate[tokenIdByHouseId(houseId)].marketValue;
     }
 
-    function setMetadata(uint tokenId_, uint houseId, uint marketValue, uint riskScore, uint zipCode , int latitude, int longitude) public onlyRole(STATE_ROLE) {
-       
-	 Metadata memory metadata = Metadata(
-	 houseId,
-     marketValue,
-	 riskScore,
-	 zipCode,
-	 latitude,
-	 longitude );
-	 
-	 tokenIdToRealEstate[tokenId_] = metadata;
+    function setMetadata(
+        uint256 tokenId_,
+        uint256 houseId,
+        uint256 marketValue,
+        uint8 riskScore,
+        uint256 zipCode,
+        int256 latitude,
+        int256 longitude
+    ) public onlyRole(STATE_ROLE) {
+        Metadata memory metadata = Metadata(
+            houseId,
+            marketValue,
+            riskScore,
+            zipCode,
+            latitude,
+            longitude
+        );
+
+        tokenIdToRealEstate[tokenId_] = metadata;
     }
 
-    function safeMint(address to, uint256 tokenId) public onlyRole(STATE_ROLE) {
+    function safeMint(
+        address to,
+        uint256 houseId,
+        uint256 marketValue,
+        uint8 riskScore,
+        uint256 zipCode,
+        int256 latitude,
+        int256 longitude
+    ) public onlyRole(STATE_ROLE) {
+        uint256 tokenId = _tokenIdCounter.current();
+        _tokenIdCounter.increment();
         _safeMint(to, tokenId);
+        houseIdToTokenId[houseId] = tokenId;
+        tokenIdToRealEstate[tokenId] = Metadata(
+            houseId,
+            marketValue,
+            riskScore,
+            zipCode,
+            latitude,
+            longitude
+        );
     }
 
+    function tokenIdsByAddress(address addressToQuery)
+        public
+        view
+        returns (uint256[] memory)
+    {
+        uint256 balance_ = balanceOf(addressToQuery);
+        uint256[] memory tokenIds = new uint256[](balance_);
+        for (uint256 i = 0; i < balance_; i++) {
+            tokenIds[i] = tokenOfOwnerByIndex(addressToQuery, i);
+        }
+        return tokenIds;
+    }
 
-    function tokenIdsByAddress(address addressToQuery) public view returns(uint256[]  memory) {
-	uint balance_ =  balanceOf(addressToQuery);
-	uint256[] memory tokenIds = new uint256[](balance_);
-	for(uint256 i=0;i<balance_;i++){
-	   tokenIds[i] =  tokenOfOwnerByIndex(addressToQuery,i);
-	}
-	return tokenIds;
+    function transferDeed(
+        uint256 tokenId,
+        address from_,
+        address to_,
+        bytes memory sigOfSender,
+        bytes memory sigOfReceiver
+    ) external onlyRole(STATE_ROLE) {
+        require(
+            from_ == recover(keccak256(abi.encodePacked(tokenId)), sigOfSender)
+        );
+        require(
+            to_ == recover(keccak256(abi.encodePacked(tokenId)), sigOfReceiver)
+        );
+        _transfer(from_, to_, tokenId);
+    }
+
+    //hash is keccak256 hashed version of tokenId(as a string)
+    function recover(bytes32 hash, bytes memory sig)
+        public
+        pure
+        returns (address)
+    {
+        bytes32 r;
+        bytes32 s;
+        uint8 v;
+
+        //Check the signature length
+        if (sig.length != 65) {
+            return (address(0));
+        }
+
+        // Divide the signature in r, s and v variables
+        assembly {
+            r := mload(add(sig, 32))
+            s := mload(add(sig, 64))
+            v := byte(0, mload(add(sig, 96)))
+        }
+
+        // Version of signature should be 27 or 28, but 0 and 1 are also possible versions
+        if (v < 27) {
+            v += 27;
+        }
+
+        // If the version is correct return the signer address
+        if (v != 27 && v != 28) {
+            return (address(0));
+        } else {
+            return ecrecover(hash, v, r, s);
+        }
     }
 
     // The following functions are overrides required by Solidity.
@@ -102,5 +189,4 @@ contract DeedNFT is ERC721Enumerable, AccessControl {
     {
         return super.supportsInterface(interfaceId);
     }
-
 }

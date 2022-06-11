@@ -23,7 +23,7 @@ const InsurePage = () => {
             const noOfHouses = await nftCtc.balanceOf(addr);
             for (let i = 0; i < noOfHouses.toNumber(); i++) {
                 const tokenId = await nftCtc.tokenOfOwnerByIndex(addr, i)
-                const house = await nftCtc.getterForMetadata(tokenId)
+                const house = await nftCtc.getMetadata(tokenId)
                 const policyFee = await poolCtc.calcEntranceFee(house.amrketValue)
                 house.policyFee = policyFee
                 houses.push(house)
