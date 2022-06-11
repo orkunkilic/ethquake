@@ -199,7 +199,7 @@ contract Pool is Ownable {
     }
 
     function claimAsHouseOwner(uint256 houseId) external {
-        require(canClaim);
+        require(canClaim, "Can't claim yet. Insurance hasn't ended.");
         require(
             msg.sender == nftCtc.ownerOfHouse(houseId),
             "You are not the owner of the house"
@@ -303,7 +303,7 @@ contract Pool is Ownable {
     }
 
     function demoEndInsurancePeriod() external onlyOwner {
-        startTime -= 400 days;
+        tokenSaleStart -= 400 days;
     }
 
 }
