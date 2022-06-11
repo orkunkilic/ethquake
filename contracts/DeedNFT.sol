@@ -11,24 +11,10 @@ contract DeedNFT is ERC721Enumerable, AccessControl {
 
     Counters.Counter private _tokenIdCounter;
 
-    bytes32 public constant STATE_ROLE = keccak256("STATE_ROLE");
-    bytes32 public constant OWNER_ROLE = keccak256("OWNER_ROLE");
+    bytes32 public constant TRANSFER_ROLE = keccak256("TRANSFER_ROLE");
+    bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
+    bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
 
-    /*
-	OUR ADDRESS STANDART
-       	[City Identifier Number] ** Istanbul is default and denotated with 0
-       	[District Identifier Number] ** Bebek is default and denotated with 0
-       	[Street Identifier Number] ** Bogazici is default and denotated with 0
-	[Building Number] ** uint value of building number
-	[Door Number] ** uint value ofdoor number	
-     	
-    */
-
-    /*
-    UPDATE
-    houseId is unique identifier of a house.
-    
-    */
     struct Metadata {
         uint256 houseId;
         uint256 marketValue;
@@ -38,13 +24,16 @@ contract DeedNFT is ERC721Enumerable, AccessControl {
         int256 longitude;
     }
 
-    mapping(uint256 => Metadata) public tokenIdToRealEstate;
+    mapping(uint256 => Metadata) public metadata;
     mapping(uint256 => uint256) public houseIdToTokenId;
 
-    constructor(address houseOwner) ERC721("MyToken", "MTK") {
+    event MintDeed(address indexed owner, uint256 indexed tokenId, uint256 houseId);
+    event TransferDeed(address indexed from, address indexed to, uint256 indexed tokenId);
+
+    constructor() ERC721("DeedNFT", "DNFT") {
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
-        _grantRole(STATE_ROLE, msg.sender);
-        _grantRole(OWNER_ROLE, houseOwner);
+        _grantRole(TRANSFER_ROLE, msg.sender);
+        _grantRole(MINTER_ROLE, msg.sender);
         _tokenIdCounter.increment();
     }
 
@@ -53,7 +42,7 @@ contract DeedNFT is ERC721Enumerable, AccessControl {
         view
         returns (Metadata memory)
     {
-        return tokenIdToRealEstate[tokenId_];
+        return metadata[tokenId_];
     }
 
     function tokenIdByHouseId(uint256 tokenId) public view returns (uint256) {
@@ -61,15 +50,15 @@ contract DeedNFT is ERC721Enumerable, AccessControl {
     }
 
     function getZipcode(uint256 houseId) public view returns (uint256) {
-        return tokenIdToRealEstate[tokenIdByHouseId(houseId)].zipCode;
+        return metadata[tokenIdByHouseId(houseId)].zipCode;
     }
 
     function getRisk(uint256 houseId) public view returns (uint8) {
-        return tokenIdToRealEstate[tokenIdByHouseId(houseId)].riskScore;
+        return metadata[tokenIdByHouseId(houseId)].riskScore;
     }
 
     function getPrice(uint256 houseId) public view returns (uint256) {
-        return tokenIdToRealEstate[tokenIdByHouseId(houseId)].marketValue;
+        return metadata[tokenIdByHouseId(houseId)].marketValue;
     }
 
     function ownerOfHouse(uint256 houseId) public view returns (address) {
@@ -79,23 +68,12 @@ contract DeedNFT is ERC721Enumerable, AccessControl {
 
     function setMetadata(
         uint256 tokenId_,
-        uint256 houseId,
         uint256 marketValue,
-        uint8 riskScore,
-        uint256 zipCode,
-        int256 latitude,
-        int256 longitude
-    ) public onlyRole(STATE_ROLE) {
-        Metadata memory metadata = Metadata(
-            houseId,
-            marketValue,
-            riskScore,
-            zipCode,
-            latitude,
-            longitude
-        );
-
-        tokenIdToRealEstate[tokenId_] = metadata;
+        uint8 riskScore
+    ) public onlyRole(ADMIN_ROLE) {
+        Metadata storage mdata = metadata[tokenId_];
+        mdata.marketValue = marketValue;
+        mdata.riskScore = riskScore;
     }
 
     function safeMint(
@@ -106,12 +84,12 @@ contract DeedNFT is ERC721Enumerable, AccessControl {
         uint256 zipCode,
         int256 latitude,
         int256 longitude
-    ) public onlyRole(STATE_ROLE) {
+    ) public onlyRole(MINTER_ROLE) {
         uint256 tokenId = _tokenIdCounter.current();
         _tokenIdCounter.increment();
         _safeMint(to, tokenId);
         houseIdToTokenId[houseId] = tokenId;
-        tokenIdToRealEstate[tokenId] = Metadata(
+        metadata[tokenId] = Metadata(
             houseId,
             marketValue,
             riskScore,
@@ -119,6 +97,7 @@ contract DeedNFT is ERC721Enumerable, AccessControl {
             latitude,
             longitude
         );
+        emit MintDeed(msg.sender, tokenId, houseId);
     }
 
     function tokenIdsByAddress(address addressToQuery)
@@ -140,7 +119,7 @@ contract DeedNFT is ERC721Enumerable, AccessControl {
         address to_,
         bytes memory sigOfSender,
         bytes memory sigOfReceiver
-    ) external onlyRole(STATE_ROLE) {
+    ) external onlyRole(TRANSFER_ROLE) {
         require(
             from_ == recover(keccak256(abi.encodePacked(tokenId)), sigOfSender)
         );
@@ -148,6 +127,7 @@ contract DeedNFT is ERC721Enumerable, AccessControl {
             to_ == recover(keccak256(abi.encodePacked(tokenId)), sigOfReceiver)
         );
         _transfer(from_, to_, tokenId);
+        emit TransferDeed(from_, to_, tokenId);
     }
 
     //hash is keccak256 hashed version of tokenId(as a string)
