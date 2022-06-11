@@ -156,7 +156,8 @@ describe("Pool Contract", function (){
             });
 
             it("should let owner make contract go to next period for demo purposes.", async function(){
-                await (await Pool.demoEndPoolEntrance()).wait();
+                // await (await Pool.demoEndPoolEntrance()).wait();
+                await Pool.provider.send("evm_increaseTime", [60 * 60 * 24 * 31]);
 
                 await expect(Pool.startTokenSale()).not.to.be.reverted;
                 expect(await Pool.canBuyTokens()).to.be.equal(true);
@@ -168,7 +169,8 @@ describe("Pool Contract", function (){
         describe("pool entrance closed.", function (){
             beforeEach(async function (){
                 await (await Pool.connect(hOwner1).enterPool(1)).wait();
-                await (await Pool.demoEndPoolEntrance()).wait();
+                // await (await Pool.demoEndPoolEntrance()).wait();
+                await Pool.provider.send("evm_increaseTime", [60 * 60 * 24 * 31]);
                 await (await Pool.startTokenSale()).wait();
 
                 await (await StableCoin.transfer(investor1.address, ethers.utils.parseEther("1000000000000"))).wait();
@@ -252,7 +254,8 @@ describe("Pool Contract", function (){
                 await (await Pool.connect(hOwner2).enterPool(2)).wait();
 
 
-                await (await Pool.demoEndPoolEntrance()).wait();
+                // await (await Pool.demoEndPoolEntrance()).wait();
+                await Pool.provider.send("evm_increaseTime", [60 * 60 * 24 * 31]);
                 await (await Pool.startTokenSale()).wait();
 
                 await (await StableCoin.transfer(investor1.address, ethers.utils.parseEther("1000000000000"))).wait();
@@ -275,7 +278,8 @@ describe("Pool Contract", function (){
                 await (await Pool.connect(inspector2).voteClaimRequest(2, false)).wait();
                 await (await Pool.connect(inspector3).voteClaimRequest(2, false)).wait();
 
-                await (await Pool.demoEndInsurancePeriod()).wait();
+                // await (await Pool.demoEndInsurancePeriod()).wait();
+                await Pool.provider.send("evm_increaseTime", [60 * 60 * 24 * 400]);
                 await (await Pool.endInsurancePeriod()).wait();
 
 
@@ -300,7 +304,8 @@ describe("Pool Contract", function (){
                     await expect(Pool.connect(investor1).claimAsInsurer()).to.be.reverted;
 
                     await (await Pool.connect(hOwner1).claimAsHouseOwner(1)).wait();
-                    await (await Pool.demoEndPoolEntrance()).wait();
+                    // await (await Pool.demoEndPoolEntrance()).wait();
+                    await Pool.provider.send("evm_increaseTime", [60 * 60 * 24 * 31]);
                     await (await Pool.endClaimPeriod()).wait();
 
 
