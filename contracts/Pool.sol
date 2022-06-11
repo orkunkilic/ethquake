@@ -11,8 +11,6 @@ import "./DeedNFT.sol";
 import "./Stake.sol";
 import "./PoolToken.sol";
 
-// FIXME: Add events!!!
-// FIXME: Reorder functions according to access and context!!!
 
 contract Pool is Ownable {
     using Strings for uint;
@@ -35,10 +33,11 @@ contract Pool is Ownable {
     uint256 public totalAmountRegistered;
     uint256 public totalPriceHouseGranted;
     uint256 public remainingHousesGranted;
+
     // There are four time periods
     // 1. Pool house registration
     // 2. 1 year
-    // 3. Calim for houses that are claimed.
+    // 3. Claim for houses that are claimed.
     // 4. Collateral claim
 
     uint8 public soldPercentage;
@@ -52,27 +51,12 @@ contract Pool is Ownable {
     mapping(uint256 => address[]) internal zipCodeToInspectors;
     mapping(uint256 => bool) public housesInPool;
 
-    constructor(
-        DeedNFT _nftCtc,
-        IERC20 _stableToken,
-        uint8 _minPoolRisk,
-        uint8 _maxPoolRisk,
-        uint8 _entranceFeePerc,
-        uint8 _inspectorPerCity,
-        Staking _stakeCtc
-    ) {
-        nftCtc = _nftCtc;
-        // tokenCtc = _tokenCtc;
-        stableToken = _stableToken;
-        minPoolRisk = _minPoolRisk;
-        maxPoolRisk = _maxPoolRisk;
-        entranceFeePerc = _entranceFeePerc;
-        inspectorPerCity = _inspectorPerCity;
-        startTime = block.timestamp;
-        stakeCtc = _stakeCtc;
-    }
-
-    event RequestVotingEnded(uint8 grants, uint8 denies);
+    event InvestedInPool(address insurer, uint8 percentage, uint256 amount);
+    event RequestOpenedForVoting(uint256 tokenId);
+    event RequestVotingEnded(uint256 tokenId, uint8 grants, uint8 denies);
+    event PoolRegistrationEnded(string name, address poolToken);
+    event InsurancePeriodEnded(); // don't really know what info these events can emit inside
+    event ClaimForHouseOwnersEnded();
 
     enum RequestStatus {
         UNDETERMINED,
@@ -90,8 +74,30 @@ contract Pool is Ownable {
         address[3] denyVoters;
     }
 
-    function didInsurancePeriodEnd() public view returns (bool){ // FIXME: Weird name, use case?
-        return (block.timestamp - startTime) > 30 days;
+    constructor(
+        DeedNFT _nftCtc,
+        IERC20 _stableToken,
+        uint8 _minPoolRisk,
+        uint8 _maxPoolRisk,
+        uint8 _entranceFeePerc,
+        uint8 _inspectorPerCity,
+        Staking _stakeCtc
+    ) {
+        nftCtc = _nftCtc;
+        stableToken = _stableToken;
+        minPoolRisk = _minPoolRisk;
+        maxPoolRisk = _maxPoolRisk;
+        entranceFeePerc = _entranceFeePerc;
+        inspectorPerCity = _inspectorPerCity;
+        startTime = block.timestamp;
+        stakeCtc = _stakeCtc;
+    }
+
+
+    function calcEntranceFee(uint256 tokenId) public view returns (uint256) { // FIXME: Not working probably, also might be overflow?
+        uint8 houseRisk = nftCtc.getRisk(tokenId);
+        uint256 housePrice = nftCtc.getPrice(tokenId);
+        return (houseRisk * housePrice) / 100;
     }
 
     function enterPool(uint256 tokenId) external {
@@ -119,14 +125,30 @@ contract Pool is Ownable {
         housesInPool[tokenId] = true;
     }
 
+    function addInspector(uint256 zipCode, address inspector)
+        external
+        onlyOwner
+    {
+        address[] storage inspectors = zipCodeToInspectors[zipCode];
+        require(
+            inspectors.length < inspectorPerCity,
+            "Inspector limit reached for the city"
+        );
 
-    function calcEntranceFee(uint256 tokenId) public view returns (uint256) { // FIXME: Not working probably, also might be overflow?
-        uint8 houseRisk = nftCtc.getRisk(tokenId);
-        uint256 housePrice = nftCtc.getPrice(tokenId);
-        return (houseRisk * housePrice) / 100;
+        // check if inspector is already in array.
+        uint8 i = 0;
+        uint256 size = inspectors.length;
+        for( ; i < size; ++i){
+            if(inspectors[i] == inspector){
+                revert("Already inspector.");
+            }
+        }
+
+        inspectors.push(inspector);
     }
 
-    function makeClaimRequest(uint256 tokenId) external { // FIXME: createClaimRequest ?
+
+    function makeClaimRequest(uint256 tokenId) external {
         require(housesInPool[tokenId], "House is not in pool");
         require(
             claimRequests[tokenId].tokenId == 0,
@@ -141,9 +163,11 @@ contract Pool is Ownable {
         ClaimRequest storage cr = claimRequests[tokenId];
         cr.tokenId = tokenId;
         cr.status = RequestStatus.UNDETERMINED;
+
+        emit RequestOpenedForVoting(tokenId);
     }
 
-    function voteClaimRequest( // FIXME: voteforCla... ?
+    function voteForClaimRequest(
         uint256 tokenId,
         bool vote
     ) external {
@@ -170,37 +194,56 @@ contract Pool is Ownable {
             if (cr.grantVotes > cr.denyVotes) {
                 cr.status = RequestStatus.GRANTED;
                 totalPriceHouseGranted += nftCtc.getPrice(cr.tokenId);
-                //remainingHousesGranted += 1;
-                if (cr.denyVotes == 1) { // FIXME: Is there a better way to do these?
+
+                stakeCtc.rewardInspector(cr.grantVoters[0]);
+                stakeCtc.rewardInspector(cr.grantVoters[1]);
+                if (cr.denyVotes == 1) {
                     stakeCtc.slashInspector(cr.denyVoters[0]);
-                    stakeCtc.rewardInspector(cr.grantVoters[0]);
-                    stakeCtc.rewardInspector(cr.grantVoters[1]);
                 } else { // deny == 0
-                    stakeCtc.rewardInspector(cr.grantVoters[0]);
-                    stakeCtc.rewardInspector(cr.grantVoters[1]);
                     stakeCtc.rewardInspector(cr.grantVoters[2]);
                 }
             } else {
                 cr.status = RequestStatus.DENIED;
+
+                stakeCtc.rewardInspector(cr.denyVoters[0]);
+                stakeCtc.rewardInspector(cr.denyVoters[1]);
                 if (cr.grantVotes == 1) {
                     stakeCtc.slashInspector(cr.grantVoters[0]);
-                    stakeCtc.rewardInspector(cr.denyVoters[0]);
-                    stakeCtc.rewardInspector(cr.denyVoters[1]);
                 } else {
-                    stakeCtc.rewardInspector(cr.denyVoters[0]);
-                    stakeCtc.rewardInspector(cr.denyVoters[1]);
                     stakeCtc.rewardInspector(cr.denyVoters[2]);
                 }
             }
-            emit RequestVotingEnded(cr.grantVotes, cr.denyVotes);
+            emit RequestVotingEnded(cr.tokenId, cr.grantVotes, cr.denyVotes);
         }
     }
 
-    function min(uint256 a, uint256 b) public pure returns (uint256) {
-        return a <= b ? a : b;
+
+    function calculateCollateralAmount()
+        internal view
+        returns (uint256)
+    {
+        uint256 amount = (100 - maxPoolRisk); // 60
+        uint256 month = (block.timestamp - startTime) / 30 days; // 2. ay
+        uint256 extra = month * 5; // 10
+        uint256 total = amount + extra; // 70
+
+        return total;
     }
 
-    function claimAsHouseOwner(uint256 tokenId) external { // FIXME: better name ?
+    // each amount represents 1 / 100
+    function buyPoolTokens(uint8 percentage) external { // FIXME: Test
+        require(canBuyTokens, "Cannot buy pool tokens yet!");
+        require(percentage + soldPercentage <= 100, "Too much percentage");
+        uint256 collateralPercentage = calculateCollateralAmount(); // returns 70
+        uint256 amountToTransfer = totalPoolBalance * collateralPercentage * percentage / 10000; // 100_000000 * 70 * 50 / 10000 = 35_000000 -> 35
+        stableToken.transferFrom(msg.sender, address(this), amountToTransfer);
+        tokenCtc.transfer(msg.sender, percentage);
+        soldPercentage += percentage;
+
+        emit InvestedInPool(msg.sender, percentage, amountToTransfer);
+    }
+
+    function claimFundsForHouseOwner(uint256 tokenId) external {
         require(canClaim, "Can't claim yet. Insurance hasn't ended.");
         require(
             msg.sender == nftCtc.ownerOfHouse(tokenId),
@@ -218,40 +261,11 @@ contract Pool is Ownable {
             nftCtc.getPrice(tokenId) * amountAtTheEnd / totalPriceHouseGranted,
             nftCtc.getPrice(tokenId)
         );
-        //totalAmountRegistered -= nftCtc.getPrice(tokenId); // why the fuck we are removing it?
         claimRequests[tokenId].status = RequestStatus.CLAIMED;
         stableToken.transfer(msg.sender, claimable);
-        //housesInPool[tokenId] = false; // why the fuck we are removing house from pool?
     }
 
-    function addInspector(uint256 zipCode, address inspector)
-        external
-        onlyOwner
-    { // FIXME: check for duplicates?
-        address[] storage inspectors = zipCodeToInspectors[zipCode];
-        require(
-            inspectors.length < inspectorPerCity,
-            "Inspector limit reached for the city"
-        );
-        inspectors.push(inspector);
-    }
-
-    // each amount represents 1 / 100
-    function buyPoolPartially(uint8 percentage) external { // FIXME: Test + better naming?
-        require(canBuyTokens, "Cannot buy pool tokens yet!");
-        require(percentage + soldPercentage <= 100, "Too much percentage");
-        uint256 collateralPercentage = calculateCollateralAmount(); // returns 70
-        // console.log(collateralPercentage);
-        // console.log(totalPoolBalance);
-        uint256 amountToTransfer = totalPoolBalance * collateralPercentage * percentage / 10000; // 100_000000 * 70 * 50 / 10000 = 35_000000 -> 35
-        // console.log(amountToTransfer);
-        // console.log("sold perc.", soldPercentage);
-        stableToken.transferFrom(msg.sender, address(this), amountToTransfer);
-        tokenCtc.transfer(msg.sender, percentage);
-        soldPercentage += percentage;
-    }
-
-    function claimAsInsurer() external { // FIXME: better naming?
+    function claimFundsForInsurer() external {
         require(canInsurerClaim, "Insurers can't claim yet.");
         uint8 ownedTokens = uint8(tokenCtc.balanceOf(msg.sender));
         require(ownedTokens > 0, "You don't own any share of the pool");
@@ -260,19 +274,7 @@ contract Pool is Ownable {
         stableToken.transferFrom(address(this), msg.sender, claimable);
     }
 
-    function calculateCollateralAmount()
-        internal view
-        returns (uint256)
-    {
-        uint256 amount = (100 - maxPoolRisk); // 60
-        uint256 month = (block.timestamp - startTime) / 30 days; // 2. ay
-        uint256 extra = month * 5; // 10
-        uint256 total = amount + extra; // 70
-
-        return total;
-    }
-
-    function startTokenSale() external { // FIXME: start...Period ?
+    function endPoolRegistrationPeriod() external {
         require(
             block.timestamp - startTime >= 30 days,
             "Pool registry hasnt ended yet"
@@ -281,6 +283,7 @@ contract Pool is Ownable {
         tokenSaleStart = block.timestamp;
         string memory name = string(abi.encodePacked("Pool-", startTime.toString()));
         tokenCtc = new PoolToken(name, name);
+        emit PoolRegistrationEnded(name, address(tokenCtc));
     }
 
     function endInsurancePeriod() external onlyOwner{ // claim period for pool is started
@@ -293,6 +296,8 @@ contract Pool is Ownable {
         // console.log(canClaim);
         canBuyTokens = false;
         amountAtTheEnd = stableToken.balanceOf(address(this));
+
+        emit InsurancePeriodEnded();
     }
 
     function endClaimPeriod() external onlyOwner{ // claim period for insurers is started
@@ -304,18 +309,19 @@ contract Pool is Ownable {
         canInsurerClaim = true;
         stableToken.transfer(msg.sender, stableToken.balanceOf(address(this)) * 1 / 100); // fee
         amountLeftToInsurers = stableToken.balanceOf(address(this));
-    } 
 
-    // function demoEndPoolEntrance() external onlyOwner {
-    //     startTime -= 31 days;
-    // }
-
-    // function demoEndInsurancePeriod() external onlyOwner {
-    //     tokenSaleStart -= 400 days;
-    // }
+        emit ClaimForHouseOwnersEnded();
+    }
 
     function getPoolTokenAddress() public view returns(address){
         return address(tokenCtc);
     }
 
+    function isInsurancePeriodOver() public view returns (bool){
+        return (block.timestamp - startTime) > 30 days;
+    }
+
+    function min(uint256 a, uint256 b) public pure returns (uint256) {
+        return a <= b ? a : b;
+    }
 }
