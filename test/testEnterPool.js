@@ -93,15 +93,6 @@ describe("EnterPoolTester", function () {
     const enterPoolTx = await Pool.enterPool(1);
     await enterPoolTx.wait();
     console.log("Entered pool");
-
-
-
-
-
-
-    // wait until the transaction is mined
-    // await setGreetingTx.wait();
-
-    // expect(await greeter.greet()).to.equal("Hola, mundo!");
+    
   });
 });
