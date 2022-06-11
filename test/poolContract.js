@@ -88,10 +88,13 @@ describe("Pool Contract", function (){
         describe("pool enterance period", function (){
             it("should let home with right conditions enter pool", async function (){
                 await expect(Pool.connect(hOwner1).enterPool(1)).not.to.be.reverted;
+                expect(await Pool.housesInPool(1)).to.be.equal(true);
             });
 
             it("shouldn't let none homeowner enter pool", async function(){
                 await expect(Pool.connect(hOwner2).enterPool(1)).to.be.reverted;
+                expect(await Pool.housesInPool(1)).to.be.equal(false);
+
             });
 
             it("shouldn't let homes with inadequate risk levels enter the pool", async function (){
@@ -104,34 +107,41 @@ describe("Pool Contract", function (){
 
 
                 await expect(Pool.connect(hOwner2).enterPool(2)).to.be.reverted;
+                expect(await Pool.housesInPool(2)).to.be.equal(false);
+
             });
 
             it("shouldn't let homes with inspectors less than 3 enter the pool", async function (){
-                await (await DeedNFT.safeMint(hOwner2.address, 2, ethers.utils.parseEther("100000"), 90, 42, 1234, 5678)).wait();
+                await (await DeedNFT.safeMint(hOwner2.address, 2, ethers.utils.parseEther("100000"), 15, 42, 1234, 5678)).wait();
                 
                 await (await Pool.addInspector(42, inspector1.address));
 
                 await expect(Pool.connect(hOwner2).enterPool(2)).to.be.reverted;
-
+                expect(await Pool.housesInPool(2)).to.be.equal(false);
             });
 
             it("shouldn't let claims be made before pool enterance period closes", async function (){
                 await (await Pool.connect(hOwner1).enterPool(1)).wait();
 
                 await expect(Pool.connect(hOwner1).makeClaimRequest(1)).to.be.reverted;
-
+                expect((await Pool.claimRequests(1)).tokenId).to.be.equal(0);
             });
 
             it("shouldn't let inspectors vote", async function (){
                 await (await Pool.connect(hOwner1).enterPool(1)).wait();
 
                 await expect(Pool.connect(inspector1).voteClaimRequest(1, true, 31)).to.be.reverted;
+                
+                var claimReq = await Pool.claimRequests(1);
+                expect(claimReq.denyVotes + claimReq.grantVotes).to.be.equal(0);
             });
 
             it("shouldn't let house owners claim 'reward'.", async function () {
                 await (await Pool.connect(hOwner1).enterPool(1)).wait();
-
+                var oldBalance = await StableCoin.balanceOf(hOwner1.address);
                 await expect(Pool.connect(hOwner1).claimAsHouseOwner(1)).to.be.reverted;
+                var newBalance = await StableCoin.balanceOf(hOwner1.address);
+                expect(newBalance).to.be.equal(oldBalance);
             });
 
             it("shouldn't let investors buy pool tokens", async function (){
@@ -139,13 +149,17 @@ describe("Pool Contract", function (){
             });
 
             it("shouldn't let investors claim", async function (){
+                var oldBalance = await StableCoin.balanceOf(investor1.address);
                 await expect(Pool.connect(investor1).claimAsInsurer()).to.be.reverted;
+                var newBalance = await StableCoin.balanceOf(investor1.address);
+                expect(newBalance).to.be.equal(oldBalance);
             });
 
             it("should let owner make contract go to next period for demo purposes.", async function(){
                 await (await Pool.demoEndPoolEntrance()).wait();
 
                 await expect(Pool.startTokenSale()).not.to.be.reverted;
+                expect(await Pool.canBuyTokens()).to.be.equal(true);
             });
 
         });
@@ -170,19 +184,25 @@ describe("Pool Contract", function (){
                     await (await Pool.connect(investor2).buyPoolPartially(50)).wait();
                     var balance = await PoolToken.balanceOf(investor1.address);
                     var balance2 = await PoolToken.balanceOf(investor2.address);
-                    await expect(balance).to.be.equal(50);
-                    await expect(balance2).to.be.equal(50); // both balances for pool token be 50
+                    expect(balance).to.be.equal(50);
+                    expect(balance2).to.be.equal(50); // both balances for pool token be 50
                 });
 
                 it("investors can't claim yet", async function () {
                     await (await Pool.connect(investor1).buyPoolPartially(50)).wait()
+                    var oldBalance = await StableCoin.balanceOf(investor1.address);
                     await expect(Pool.claimAsInsurer()).to.be.reverted;
+                    var newBalance = await StableCoin.balanceOf(investor1.address);
+                    expect(newBalance).to.be.equal(oldBalance);
                 });
             });
 
             describe("house owners", function () {
                 it("can claim damages.", async function () {
                     await expect(Pool.connect(hOwner1).makeClaimRequest(1)).not.to.be.reverted;
+                    
+                    var claimReq = await Pool.claimRequests(1);
+                    expect(claimReq.tokenId).to.be.equal(1);
                 });
                 
                 
@@ -200,6 +220,9 @@ describe("Pool Contract", function (){
                 it("can vote for house", async function () {
                     await expect(Pool.connect(inspector1).voteClaimRequest(1, true)).not.be.reverted;
                     await expect(Pool.connect(inspector2).voteClaimRequest(1, false)).not.be.reverted;
+                    var claimReq = await Pool.claimRequests(1);
+                    expect(claimReq.grantVotes).to.be.equal(1);
+                    expect(claimReq.denyVotes).to.be.equal(1);
                 });
 
                 it("can grant house if majority of inspectors vote ok", async function(){
@@ -259,9 +282,10 @@ describe("Pool Contract", function (){
             });
             describe("house owners claiming 'rewards'", function (){
                 it("should let granted houses owners claim.", async function (){
-                    var beforeBalance = await StableCoin.balanceOf(hOwner1.address);
+                    var oldBalance = await StableCoin.balanceOf(hOwner1.address);
                     await expect(Pool.connect(hOwner1).claimAsHouseOwner(1)).not.to.be.reverted;
-                    expect(await StableCoin.balanceOf(hOwner1.address)).to.be.above(beforeBalance);
+                    var newBalance = await StableCoin.balanceOf(hOwner1.address);
+                    expect(newBalance).to.be.above(oldBalance);
                     
                 });
                 it("shouldn't let denied house owners claim.", async function (){
@@ -284,6 +308,8 @@ describe("Pool Contract", function (){
                     await (await PoolToken.connect(investor2).approve(Pool.address, ethers.utils.parseEther("100"))).wait();
 
                     await expect(Pool.connect(investor1).claimAsInsurer()).not.to.be.reverted;
+                    var newBalance = await PoolToken.balanceOf(investor1.address);
+                    expect(newBalance).to.be.equal(0);
                 });
     
                 

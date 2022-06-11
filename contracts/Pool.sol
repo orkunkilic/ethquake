@@ -6,7 +6,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
-import "hardhat/console.sol";
+// import "hardhat/console.sol";
 import "./DeedNFT.sol";
 import "./Stake.sol";
 import "./PoolToken.sol";
@@ -279,13 +279,13 @@ contract Pool is Ownable {
     }
 
     function endInsurancePeriod() external onlyOwner{ // claim period for pool is started
-        console.log("here");
+        // console.log("here");
         require( 
             block.timestamp - tokenSaleStart >= 365 days,
             "Insurance period hasnt ended yet"
         );
         canClaim = true;
-        console.log(canClaim);
+        // console.log(canClaim);
         canBuyTokens = false;
         amountAtTheEnd = stableToken.balanceOf(address(this));
     }
