@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from "react"
 import { ethers } from "ethers"
 import axios from "axios"
-import nftCtcData from "../abis/nft.json"
+import nftCtcData from "../abis/DeedNFT.json"
 
-const nftAddr = ""
+const nftAddr = "0xa513E6E4b8f2a923D98304ec87F64353C4D5C853"
 const provider = new ethers.providers.Web3Provider(window.ethereum);
 const signer = provider.getSigner()
 const nftCtc = new ethers.Contract(nftAddr, nftCtcData.abi, signer);
@@ -17,18 +17,32 @@ const TransferPage = () => {
 
     useEffect(() => {
         const getOwnedHouses = async () => {
-            const housesArr = []
+            let houses = []
             const addr = await signer.getAddress()
+            console.log("address = ", addr);
+            // houses = await nftCtc.tokenIdsByAddress(addr)
+            // console.log("houses = ", houses);
             const noOfHouses = await nftCtc.balanceOf(addr);
             for (let i = 0; i < noOfHouses.toNumber(); i++) {
+                let house = {};
                 const tokenId = await nftCtc.tokenOfOwnerByIndex(addr, i)
-                const house = await nftCtc.getMetadata(tokenId)
-                housesArr.push(house);
+                const metadata = await nftCtc.getMetadata(tokenId)
+                // house = {...metadata}
+                // console.log("metadata = ", metadata);
+                house.tokenId = tokenId;
+                house.houseId = metadata[0].toNumber()
+                house.marketValue = metadata[1].toNumber()
+                house.riskScore = metadata[2]
+                house.zipCode = metadata[3].toNumber()
+                house.latitude = metadata[4].toNumber()
+                house.longitude = metadata[5].toNumber()
+                houses.push(house)
             }
-            setHouses(housesArr)
+            console.log("houses = ", houses);
+            setHouses(houses)
         }
-        //getOwnedHouses
-    })
+        getOwnedHouses()
+    }, [])
 
     const approveTranfer = async (id, zipCode, receiver) => {
         const res = await axios.post(
@@ -59,7 +73,7 @@ const TransferPage = () => {
             onChange={(e) => { setReceiverAddr(e.target.value) }} />
         {
             houses.length > 0 ?
-                houses.map(h => renderHouseComp(h.marketValue, h.risk, h.zipCode, h.tokenId))
+                houses.map(h => renderHouseComp(h.marketValue, h.riskScore, h.zipCode, h.tokenId))
                 : <h1>Loading</h1>
         }
     </div>)

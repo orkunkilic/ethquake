@@ -89,6 +89,10 @@ contract Pool is Ownable {
         address[3] denyVoters;
     }
 
+    function didInsurancePeriodEnd() public view returns (bool){
+        return (block.timestamp - startTime) > 30 days;
+    }
+
     function enterPool(uint256 tokenId) external {
         require(
             (block.timestamp - startTime) <= 30 days,

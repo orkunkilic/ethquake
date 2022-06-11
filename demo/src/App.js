@@ -16,9 +16,12 @@ function App() {
         flexDirection: "column"
       }}>
         <Text h1>De-Insurance</Text>
-        <Button width="300px" mt={3} onClick={() => navigate('/insure')}>Insurance</Button>
+        <Button width="300px" mt={3} onClick={() => navigate('/buy_tokens_of_pool')}>Buy tokens of pool</Button>
+        <Button width="300px" mt={3} onClick={() => navigate('/claim_damage')}>Claim Damage in your house</Button>
+        <Button width="300px" mt={3} onClick={() => navigate('/insure')}>Insure your house</Button>
         <Button width="300px" mt={3} onClick={() => navigate('/issue')}>Issue Deed NFT</Button>
         <Button width="300px" mt={3} onClick={() => navigate('/transfer')}>Transfer Deed</Button>
+        <Button width="300px" mt={3} onClick={() => navigate('/time_skips')}>Time skips</Button>
       </div>
     </GeistProvider>
   );

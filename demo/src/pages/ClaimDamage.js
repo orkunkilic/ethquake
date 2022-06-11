@@ -19,7 +19,7 @@ const nftCtc = new ethers.Contract(nftAddr, nftCtcData.abi, signer);
 const tokenCtc = new ethers.Contract(tokenAddr, tokenData.abi, signer)
 const stableCtc = new ethers.Contract(stableAddr, stableData.abi, signer)
 
-const InsurePage = () => {
+const ClaimDamage = () => {
 
     useEffect(() => {
 
@@ -46,9 +46,11 @@ const InsurePage = () => {
                 house.longitude = metadata[5].toNumber()
                 const policyFee = await poolCtc.calcEntranceFee(tokenId)
                 const isHouseInPool = await poolCtc.housesInPool(tokenId)
+                const isHouseIsAlreadyDamaged = await poolCtc.claimRequests(tokenId)
+                console.log("isHouseIsAlreadyDamaged", isHouseIsAlreadyDamaged[0].toNumber())
                 house.policyFee = policyFee.toNumber();
                 console.log("isHouseInPool", isHouseInPool);
-                if(!isHouseInPool) {
+                if(isHouseInPool && isHouseIsAlreadyDamaged[0].toNumber() == 0) {
                     houses.push(house)
                 }
             }
@@ -60,9 +62,9 @@ const InsurePage = () => {
 
     const [houses, setHouses] = useState([]);
 
-    const insure = async (price, id) => {
-        await stableCtc.approve(poolAddr, price);
-        const txn = await poolCtc.enterPool(id)
+    const claimHouseDamage = async (id) => {
+        // await stableCtc.approve(poolAddr, price);
+        const txn = await poolCtc.makeClaimRequest(id)
         const receipt = await txn.wait()
         console.log(receipt)
     }
@@ -74,8 +76,7 @@ const InsurePage = () => {
             <h3>You house in address: {houseId}</h3>
             <h3>House Price: {price / 10 ** 6}$</h3>
             <h3>House Risk: {risk}%</h3>
-            <h3>Calculated Policy Fee: {policyFee / 10 ** 6 ?? 0}$</h3>
-            <button onClick={() => { insure(price, id) }}>Insure My House</button>
+            <button onClick={() => { claimHouseDamage(id) }}>Claim there is a damage in your house</button>
         </div>)
     }
 
@@ -84,7 +85,7 @@ const InsurePage = () => {
             display: "flex", alignItems: "center",
             justifyContent: "center", flexDirection: "column"
         }}>
-            <h1>Insurance Your House</h1>
+            <h1>Claim damage to your house</h1>
             {houses.length > 0 ?
                 houses.map((h, index) => renderInsureComp(h.houseId, h.policyFee, h.marketValue, h.riskScore, h.tokenId, index))
                 : <h1>No Houses</h1>}
@@ -92,4 +93,4 @@ const InsurePage = () => {
     )
 }
 
-export default InsurePage
+export default ClaimDamage
