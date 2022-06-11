@@ -216,7 +216,8 @@ contract Pool is Ownable {
         require(canBuyTokens, "Cannot buy pool tokens yet!");
         uint256 price = calculateTokenPrice(totalAmountRegistered);
         uint256 oldBalance = stableToken.balanceOf(address(this));
-        stableToken.transfer(
+        stableToken.transferFrom(
+            msg.sender,
             address(this),
             price * amount - oldBalance
         );
@@ -240,7 +241,7 @@ contract Pool is Ownable {
     }
 
     function calculateTokenPrice(uint256 initalPoolVolume)
-        internal view
+        public view
         returns (uint256)
     {
         return initalPoolVolume * (200 - (minPoolRisk + maxPoolRisk) / 2) / 100;
