@@ -5,6 +5,7 @@ import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/utils/Strings.sol";
 import "./DeedNFT.sol";
 import "./Stake.sol";
 import "./PoolToken.sol";
@@ -12,6 +13,8 @@ import "./PoolToken.sol";
 
 
 contract Pool is Ownable {
+    using Strings for uint;
+
     DeedNFT nftCtc;
     IERC20 tokenCtc;
     IERC20 stableToken;
@@ -20,10 +23,13 @@ contract Pool is Ownable {
     uint8 maxPoolRisk;
     uint8 entranceFeePerc;
     uint8 inspectorPerCity;
+
     uint256 startTime;
     uint256 tokenSaleStart;
     bool canBuyTokens;
     bool canClaim;
+    bool canInsurerClaim;
+
     uint256 totalAmountRegistered;
     uint256 totalPriceHouseGranted;
     uint256 remainingHousesGranted;
@@ -32,6 +38,13 @@ contract Pool is Ownable {
     // 2. 1 year
     // 3. Calim for houses that are claimed.
     // 4. Collateral claim
+
+    uint8 soldPercentage;
+    uint256 totalPoolBalance;
+    uint256 totalSoldPoolBalance;
+
+    uint256 amountAtTheEnd;
+    uint256 amountLeftToInsurers;
 
     mapping(uint256 => ClaimRequest) public claimRequests; // houseId -> Claim Request
     mapping(uint256 => address[]) internal zipCodeToInspectors;
@@ -79,6 +92,7 @@ contract Pool is Ownable {
         require(canEnterPool(houseId), "Can't enter the pool");
         uint256 enteranceFee = calcEntranceFee(houseId);
         stableToken.transferFrom(msg.sender, address(this), enteranceFee);
+        totalPoolBalance += enteranceFee;
         totalAmountRegistered += nftCtc.getPrice(houseId);
         housesInPool[houseId] = true;
     }
@@ -154,14 +168,26 @@ contract Pool is Ownable {
             if (cr.grantVotes > cr.denyVotes) {
                 cr.status = RequestStatus.GRANTED;
                 totalPriceHouseGranted += nftCtc.getPrice(cr.houseId);
-                remainingHousesGranted += 1;
+                //remainingHousesGranted += 1;
                 if (cr.denyVotes == 1) {
                     stakeCtc.slashInspector(cr.denyVoters[0]);
+                    stakeCtc.rewardInspector(cr.grantVoters[0]);
+                    stakeCtc.rewardInspector(cr.grantVoters[1]);
+                } else { // deny == 0
+                    stakeCtc.rewardInspector(cr.grantVoters[0]);
+                    stakeCtc.rewardInspector(cr.grantVoters[1]);
+                    stakeCtc.rewardInspector(cr.grantVoters[2]);
                 }
             } else {
                 cr.status = RequestStatus.DENIED;
                 if (cr.grantVotes == 1) {
-                    stakeCtc.rewardInspector(cr.grantVoters[0]);
+                    stakeCtc.slashInspector(cr.grantVoters[0]);
+                    stakeCtc.rewardInspector(cr.denyVoters[0]);
+                    stakeCtc.rewardInspector(cr.denyVoters[1]);
+                } else {
+                    stakeCtc.rewardInspector(cr.denyVoters[0]);
+                    stakeCtc.rewardInspector(cr.denyVoters[1]);
+                    stakeCtc.rewardInspector(cr.denyVoters[2]);
                 }
             }
             emit RequestVotingEnded(cr.grantVotes, cr.denyVotes);
@@ -175,28 +201,25 @@ contract Pool is Ownable {
     function claimAsHouseOwner(uint256 houseId) external {
         require(canClaim);
         require(
-            remainingHousesGranted > 0,
-            "Houses can not be claimed anymore"
-        );
-        require(
             msg.sender == nftCtc.ownerOfHouse(houseId),
             "You are not the owner of the house"
+        );
+        require(
+            claimRequests[houseId].status != RequestStatus.CLAIMED,
+            "Your are already claimed."
         );
         require(
             claimRequests[houseId].status == RequestStatus.GRANTED,
             "Your request hasn't been granted."
         );
-        claimRequests[houseId].status = RequestStatus.CLAIMED;
-
         uint256 claimable = min(
-            (nftCtc.getPrice(houseId) * stableToken.balanceOf(address(this))) /
-                totalPriceHouseGranted,
+            nftCtc.getPrice(houseId) * amountAtTheEnd / totalPriceHouseGranted,
             nftCtc.getPrice(houseId)
         );
-        totalAmountRegistered -= nftCtc.getPrice(houseId);
+        //totalAmountRegistered -= nftCtc.getPrice(houseId); // why the fuck we are removing it?
+        claimRequests[houseId].status = RequestStatus.CLAIMED;
         stableToken.transferFrom(address(this), msg.sender, claimable);
-        housesInPool[houseId] = false;
-        remainingHousesGranted -= 1;
+        //housesInPool[houseId] = false; // why the fuck we are removing house from pool?
     }
 
     function addInspector(uint256 zipCode, address inspector)
@@ -212,42 +235,35 @@ contract Pool is Ownable {
     }
 
     // each amount represents 1 / 100
-    function buyPoolPartially(uint8 amount) external {
+    function buyPoolPartially(uint8 percentage) external { // Test!!
         require(canBuyTokens, "Cannot buy pool tokens yet!");
-        uint256 price = calculateTokenPrice(totalAmountRegistered);
-        uint256 oldBalance = stableToken.balanceOf(address(this));
-        stableToken.transfer(
-            address(this),
-            price * amount - oldBalance
-        );
-        tokenCtc.transfer(msg.sender, amount);
+        require(percentage + soldPercentage <= 100, "Too much percentage");
+        uint256 collateralPercentage = calculateCollateralAmount(); // returns 70
+        uint256 amountToTransfer = totalPoolBalance * collateralPercentage * percentage / 10000; // 100_000000 * 70 * 50 / 10000 = 35_000000 -> 35
+        stableToken.transferFrom(msg.sender, address(this), amountToTransfer);
+        tokenCtc.transfer(msg.sender, percentage * 10 ** 18);
+        soldPercentage += percentage;
     }
 
     function claimAsInsurer() external {
-        require(canClaim, "Insurers can't claim yet.");
-        require(
-            remainingHousesGranted == 0 ||
-                block.timestamp - tokenSaleStart >= 395 days,
-            "Insurers can't claim yet."
-        );
-
+        require(canInsurerClaim, "Insurers can't claim yet.");
         uint8 ownedTokens = uint8(tokenCtc.balanceOf(msg.sender));
         require(ownedTokens > 0, "You don't own any share of the pool");
-        uint256 claimable = (stableToken.balanceOf(address(this)) *
-            ownedTokens) / 100;
-        tokenCtc.transferFrom(msg.sender, address(0), ownedTokens);
+        uint256 claimable = amountLeftToInsurers * ownedTokens / 100; // 100 is the total supply
+        tokenCtc.transferFrom(msg.sender, address(this), ownedTokens);
         stableToken.transferFrom(address(this), msg.sender, claimable);
     }
 
-    function calculateTokenPrice(uint256 initalPoolVolume)
+    function calculateCollateralAmount()
         internal view
         returns (uint256)
     {
-        return initalPoolVolume * (200 - (minPoolRisk + maxPoolRisk) / 2) / 100;
-    }
+        uint256 amount = (100 - maxPoolRisk); // 60
+        uint256 month = (block.timestamp - startTime) / 30 days; // 2. ay
+        uint256 extra = month * 5; // 10
+        uint256 total = amount + extra; // 70
 
-    function getPoolTokenAddress() public view returns(address) {
-        return address(tokenCtc);
+        return total;
     }
 
     function startTokenSale() external {
@@ -257,17 +273,30 @@ contract Pool is Ownable {
         );
         canBuyTokens = true;
         tokenSaleStart = block.timestamp;
-        tokenCtc = new PoolToken();
+        string memory name = string(abi.encodePacked("Pool-", startTime.toString()));
+        tokenCtc = new PoolToken(name, name);
     }
 
-    function endInsurance() external {
-        require(
+    function endInsurancePeriod() external onlyOwner{ // claim period for pool is started
+        require( 
             block.timestamp - tokenSaleStart >= 365 days,
             "Insurance period hasnt ended yet"
         );
         canClaim = true;
         canBuyTokens = false;
+        amountAtTheEnd = stableToken.balanceOf(address(this));
     }
+
+    function endClaimPeriod() external onlyOwner{ // claim period for insurers is started
+        require(
+            block.timestamp - tokenSaleStart >= 395 days,
+            "Insurance period hasnt ended yet"
+        );
+        canClaim = false;
+        canInsurerClaim = true;
+        stableToken.transfer(msg.sender, stableToken.balanceOf(address(this)) * 1 / 100); // fee
+        amountLeftToInsurers = stableToken.balanceOf(address(this));
+    } 
 
     function demoEndPoolEntrance() external onlyOwner {
         startTime -= 31 days;
