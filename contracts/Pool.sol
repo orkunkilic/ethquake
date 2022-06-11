@@ -7,12 +7,9 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "./DeedNFT.sol";
 import "./Stake.sol";
+import "./PoolToken.sol";
 
-contract PoolToken is ERC20 {
-    constructor() ERC20("Pool 1", "P1") {
-        _mint(msg.sender, 100);
-    }
-}
+
 
 contract Pool is Ownable {
     DeedNFT nftCtc;
@@ -223,7 +220,7 @@ contract Pool is Ownable {
             address(this),
             price * amount - oldBalance
         );
-        tokenCtc.transferFrom(address(this), msg.sender, amount);
+        tokenCtc.transfer(msg.sender, amount);
     }
 
     function claimAsInsurer() external {
@@ -249,8 +246,8 @@ contract Pool is Ownable {
         return initalPoolVolume * (200 - (minPoolRisk + maxPoolRisk) / 2) / 100;
     }
 
-    function getPoolToken() public view returns(IERC20) {
-        return tokenCtc;
+    function getPoolTokenAddress() public view returns(address) {
+        return address(tokenCtc);
     }
 
     function startTokenSale() external {

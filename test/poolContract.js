@@ -1,3 +1,4 @@
+const { getContractFactory } = require("@nomiclabs/hardhat-ethers/types");
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
 
@@ -8,6 +9,7 @@ describe("Pool Contract", function (){
     let DeinsuranceToken;
     let Staking;
     let Pool;
+    let PoolToken;
 
     beforeEach(async function (){
         [cOwner, hOwner1, hOwner2, inspector1, inspector2, inspector3, investor1, investor2] = await ethers.getSigners();
@@ -135,19 +137,23 @@ describe("Pool Contract", function (){
 
                 await (await StableCoin.transfer(investor1.address, ethers.utils.parseEther("1000000000"))).wait();
                 await (await StableCoin.transfer(investor2.address, ethers.utils.parseEther("1000000000"))).wait();
+
+                PoolToken = await ethers.getContractAt("PoolToken", await Pool.getPoolTokenAddress());
             });
 
             describe("investors", function(){
                 it("should let investors buy pool tokens", async function (){
                     await (await Pool.connect(investor1).buyPoolPartially(50)).wait()
                     await (await Pool.connect(investor2).buyPoolPartially(50)).wait()
-                    var balance = await (await Pool.getPoolToken().balanceOf(investor1.address)).wait();
-                    console.log(balance);
-                    await expect(balance).to.be.equal(50); // both balances for pool token be 50
+                    var balance = await PoolToken.balanceOf(investor1.address);
+                    var balance2 = await PoolToken.balanceOf(investor2.address);
+                    await expect(balance).to.be.equal(50);
+                    await expect(balance2).to.be.equal(50); // both balances for pool token be 50
                 });
 
                 it("investors can't claim yet", async function () {
-
+                    await (await Pool.connect(investor1).buyPoolPartially(50)).wait()
+                    await expect(Pool.claimAsInsurer()).to.be.reverted;
                 });
             });
 
