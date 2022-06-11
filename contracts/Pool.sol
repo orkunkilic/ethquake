@@ -86,7 +86,7 @@ contract Pool is Ownable {
         housesInPool[houseId] = true;
     }
 
-    function canEnterPool(uint256 houseId) internal returns (bool) {
+    function canEnterPool(uint256 houseId) internal view returns (bool) {
         require(
             (block.timestamp - startTime) <= 30 days,
             "Insurance period has ended"
@@ -96,7 +96,6 @@ contract Pool is Ownable {
             "You are not the owner of this house"
         );
         uint8 houseRisk = nftCtc.getRisk(houseId);
-        uint256 housePrice = nftCtc.getPrice(houseId);
         uint8 noOfInspectors = uint8(
             zipCodeToInspectors[nftCtc.getZipcode(houseId)].length
         );
@@ -125,6 +124,7 @@ contract Pool is Ownable {
             houseOwner == msg.sender,
             "You are not the owner of this house"
         );
+        require(block.timestamp - startTime >= 30 days);
         ClaimRequest storage cr = claimRequests[houseId];
         cr.houseId = houseId;
         cr.status = RequestStatus.UNDETERMINED;
@@ -132,9 +132,9 @@ contract Pool is Ownable {
 
     function voteClaimRequest(
         uint256 houseId,
-        bool vote,
-        uint256 zipcode
+        bool vote
     ) external {
+        uint256 zipcode = nftCtc.getMetadata(houseId).zipCode;
         address[] memory inspectorsOfCity = zipCodeToInspectors[zipcode];
         bool isInspector;
         for (uint8 i = 0; i < inspectorsOfCity.length; i++) {
@@ -145,6 +145,7 @@ contract Pool is Ownable {
         }
         require(isInspector, "You are not an inspector of the selected city");
         ClaimRequest storage cr = claimRequests[houseId];
+        require(cr.houseId != 0, "Chosen house doesn't have any claim requests");
         if (vote) {
             cr.grantVoters[cr.grantVotes] = msg.sender;
             cr.grantVotes++;
@@ -242,11 +243,13 @@ contract Pool is Ownable {
         stableToken.transferFrom(address(this), msg.sender, claimable);
     }
 
-    function calculateTokenPrice(uint8 percantage, uint256 initalPoolVolume)
-        internal
+    function calculateTokenPrice(uint8 percentage, uint256 initalPoolVolume)
+        internal view
         returns (uint256)
     {
-        return 100;
+        return initalPoolVolume * 
+        (percentage + (2 * (block.timestamp - tokenSaleStart) / 30 days)) /
+        100;
     }
 
     function startTokenSale() external {
@@ -275,4 +278,5 @@ contract Pool is Ownable {
     function demoEndInsurancePeriod() external onlyOwner {
         startTime -= 400 days;
     }
+
 }
