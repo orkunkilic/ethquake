@@ -11,7 +11,8 @@ import "./DeedNFT.sol";
 import "./Stake.sol";
 import "./PoolToken.sol";
 
-
+// FIXME: Add events!!!
+// FIXME: Reorder functions according to access and context!!!
 
 contract Pool is Ownable {
     using Strings for uint;
@@ -89,7 +90,7 @@ contract Pool is Ownable {
         address[3] denyVoters;
     }
 
-    function didInsurancePeriodEnd() public view returns (bool){
+    function didInsurancePeriodEnd() public view returns (bool){ // FIXME: Weird name, use case?
         return (block.timestamp - startTime) > 30 days;
     }
 
@@ -119,13 +120,13 @@ contract Pool is Ownable {
     }
 
 
-    function calcEntranceFee(uint256 tokenId) public view returns (uint256) {
+    function calcEntranceFee(uint256 tokenId) public view returns (uint256) { // FIXME: Not working probably, also might be overflow?
         uint8 houseRisk = nftCtc.getRisk(tokenId);
         uint256 housePrice = nftCtc.getPrice(tokenId);
-        return (houseRisk * housePrice) / 100; // for now when fix????
+        return (houseRisk * housePrice) / 100;
     }
 
-    function makeClaimRequest(uint256 tokenId) external {
+    function makeClaimRequest(uint256 tokenId) external { // FIXME: createClaimRequest ?
         require(housesInPool[tokenId], "House is not in pool");
         require(
             claimRequests[tokenId].tokenId == 0,
@@ -142,7 +143,7 @@ contract Pool is Ownable {
         cr.status = RequestStatus.UNDETERMINED;
     }
 
-    function voteClaimRequest(
+    function voteClaimRequest( // FIXME: voteforCla... ?
         uint256 tokenId,
         bool vote
     ) external {
@@ -170,7 +171,7 @@ contract Pool is Ownable {
                 cr.status = RequestStatus.GRANTED;
                 totalPriceHouseGranted += nftCtc.getPrice(cr.tokenId);
                 //remainingHousesGranted += 1;
-                if (cr.denyVotes == 1) {
+                if (cr.denyVotes == 1) { // FIXME: Is there a better way to do these?
                     stakeCtc.slashInspector(cr.denyVoters[0]);
                     stakeCtc.rewardInspector(cr.grantVoters[0]);
                     stakeCtc.rewardInspector(cr.grantVoters[1]);
@@ -199,7 +200,7 @@ contract Pool is Ownable {
         return a <= b ? a : b;
     }
 
-    function claimAsHouseOwner(uint256 tokenId) external {
+    function claimAsHouseOwner(uint256 tokenId) external { // FIXME: better name ?
         require(canClaim, "Can't claim yet. Insurance hasn't ended.");
         require(
             msg.sender == nftCtc.ownerOfHouse(tokenId),
@@ -226,7 +227,7 @@ contract Pool is Ownable {
     function addInspector(uint256 zipCode, address inspector)
         external
         onlyOwner
-    {
+    { // FIXME: check for duplicates?
         address[] storage inspectors = zipCodeToInspectors[zipCode];
         require(
             inspectors.length < inspectorPerCity,
@@ -236,7 +237,7 @@ contract Pool is Ownable {
     }
 
     // each amount represents 1 / 100
-    function buyPoolPartially(uint8 percentage) external { // Test!!
+    function buyPoolPartially(uint8 percentage) external { // FIXME: Test + better naming?
         require(canBuyTokens, "Cannot buy pool tokens yet!");
         require(percentage + soldPercentage <= 100, "Too much percentage");
         uint256 collateralPercentage = calculateCollateralAmount(); // returns 70
@@ -250,7 +251,7 @@ contract Pool is Ownable {
         soldPercentage += percentage;
     }
 
-    function claimAsInsurer() external {
+    function claimAsInsurer() external { // FIXME: better naming?
         require(canInsurerClaim, "Insurers can't claim yet.");
         uint8 ownedTokens = uint8(tokenCtc.balanceOf(msg.sender));
         require(ownedTokens > 0, "You don't own any share of the pool");
@@ -271,7 +272,7 @@ contract Pool is Ownable {
         return total;
     }
 
-    function startTokenSale() external {
+    function startTokenSale() external { // FIXME: start...Period ?
         require(
             block.timestamp - startTime >= 30 days,
             "Pool registry hasnt ended yet"
