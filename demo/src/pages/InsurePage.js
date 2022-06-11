@@ -7,12 +7,10 @@ import tokenData from "../abis/token.json"
 
 const poolAddr = "0xd7503bC5957132D9f80a27BB0A6bAF6148ef906E"
 const nftAddr = ""
-const tokenAddr = ""
 const provider = new ethers.providers.Web3Provider(window.ethereum)
 const signer = provider.getSigner()
 const poolCtc = new ethers.Contract(poolAddr, poolCtcData.abi, signer);
 const nftCtc = new ethers.Contract(nftAddr, nftCtcData.abi, signer);
-const tokenCtc = new ethers.Contract(tokenAddr, tokenData.abi, signer)
 
 const InsurePage = () => {
 
