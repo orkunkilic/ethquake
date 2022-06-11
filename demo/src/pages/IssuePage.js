@@ -6,11 +6,20 @@ import { Button, Input, Text } from "@geist-ui/core"
 import axios from "axios"
 
 const nftAddr = ""
-const provider = new ethers.providers.Web3Provider(window.ethereum)
-const signer = provider.getSigner()
+// const provider = new ethers.providers.Web3Provider(window.ethereum)
+// console.log(provider);
+// const signer = provider.getSigner()
+// console.log(signer);
+// console.log(signer._address);
+const provider = new ethers.providers.Web3Provider(window.ethereum, "any");
+// Prompt user for account connections
+const signer = provider.getSigner();
+
 const nftCtc = new ethers.Contract(nftAddr, nftCtcData.abi, signer);
 
 const IssuePage = () => {
+    
+
 
     const [addressId, setAddressId] = useState("");
     const [zipCode, setZipCode] = useState("");
@@ -21,11 +30,17 @@ const IssuePage = () => {
 
     const issue = async () => {
         showPopup("We are checking your data and ownership...")
+        await provider.send("eth_requestAccounts", []);
+        const address = await signer.getAddress();
+        console.log("Address = ",address);
+        // console.log("Account:", await );
         const res = await axios.post(
             "http://localhost:3001/nft/issue",
             {
                 houseId: addressId,
-                zipCode: zipCode
+                zipCode: zipCode,
+                address: address
+                // TODO: add address to the request
             }
         )
         console.log(res)
@@ -33,7 +48,7 @@ const IssuePage = () => {
     }
 
     const showPopup = async (text) => {
-        alert('')
+        alert(text);
     }
 
 

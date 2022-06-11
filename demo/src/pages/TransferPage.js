@@ -4,7 +4,7 @@ import axios from "axios"
 import nftCtcData from "../abis/nft.json"
 
 const nftAddr = ""
-const provider = new ethers.providers.Web3Provider(window.ethereum)
+const provider = new ethers.providers.Web3Provider(window.ethereum);
 const signer = provider.getSigner()
 const nftCtc = new ethers.Contract(nftAddr, nftCtcData.abi, signer);
 
