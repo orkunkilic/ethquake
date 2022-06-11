@@ -53,103 +53,70 @@ describe("Pool Contract", function (){
             await (await StableCoin.transfer(investor1.address, ethers.utils.parseEther("1000000"))).wait();
             await (await StableCoin.transfer(investor2.address, ethers.utils.parseEther("1000000"))).wait();
 
-
+            const mintHouseTx = await DeedNFT.safeMint(hOwner1.address, 1, ethers.utils.parseEther("100000"), 13, 31, 1234, 5678);
+            await mintHouseTx.wait();
+            
+            await (await Pool.addInspector(31, inspector1.address));
+            await (await Pool.addInspector(31, inspector2.address));
+            await (await Pool.addInspector(31, inspector3.address));
 
         });
         
         describe("pool enterance period", function (){
             it("should let home with right conditions enter pool", async function (){
-                const mintHouseTx = await DeedNFT.safeMint(hOwner1.address, 1, ethers.utils.parseEther("100000"), 13, 31, 1234, 5678);
-                await mintHouseTx.wait();
-                
-                await (await Pool.addInspector(31, inspector1.address));
-                await (await Pool.addInspector(31, inspector2.address));
-                await (await Pool.addInspector(31, inspector3.address));
-
-
-
                 await expect(Pool.connect(hOwner1).enterPool(1)).not.to.be.reverted;
             });
 
             it("shouldn't let none homeowner enter pool", async function(){
-                const mintHouseTx = await DeedNFT.safeMint(hOwner1.address, 1, ethers.utils.parseEther("100000"), 90, 31, 1234, 5678);
-                await mintHouseTx.wait();
-                
-                await (await Pool.addInspector(31, inspector1.address));
-                await (await Pool.addInspector(31, inspector2.address));
-                await (await Pool.addInspector(31, inspector3.address));
-
-
-
                 await expect(Pool.connect(hOwner2).enterPool(1)).to.be.reverted;
             });
 
             it("shouldn't let homes with inadequate risk levels enter the pool", async function (){
-                const mintHouseTx = await DeedNFT.safeMint(hOwner1.address, 1, ethers.utils.parseEther("100000"), 13, 31, 1234, 5678);
-                await mintHouseTx.wait();
+                await (await DeedNFT.safeMint(hOwner2.address, 2, ethers.utils.parseEther("100000"), 90, 42, 1234, 5678)).wait();
                 
-                await (await Pool.addInspector(31, inspector1.address));
-                await (await Pool.addInspector(31, inspector2.address));
-                await (await Pool.addInspector(31, inspector3.address));
+                await (await Pool.addInspector(42, inspector1.address));
+                await (await Pool.addInspector(42, inspector2.address));
+                await (await Pool.addInspector(42, inspector3.address));
 
 
 
-                await expect(Pool.connect(hOwner1).enterPool(1)).not.to.be.reverted;
+                await expect(Pool.connect(hOwner2).enterPool(2)).to.be.reverted;
             });
 
             it("shouldn't let homes with inspectors less than 3 enter the pool", async function (){
-                const mintHouseTx = await DeedNFT.safeMint(hOwner1.address, 1, ethers.utils.parseEther("100000"), 13, 31, 1234, 5678);
-                await mintHouseTx.wait();
+                await (await DeedNFT.safeMint(hOwner2.address, 2, ethers.utils.parseEther("100000"), 90, 42, 1234, 5678)).wait();
+                
+                await (await Pool.addInspector(42, inspector1.address));
 
-                await (await Pool.addInspector(31, inspector1.address))
-
-                await expect(Pool.connect(hOwner1).enterPool(1)).to.be.reverted;
+                await expect(Pool.connect(hOwner2).enterPool(2)).to.be.reverted;
 
             });
 
             it("shouldn't let claims be made before pool enterance period closes", async function (){
-                const mintHouseTx = await DeedNFT.safeMint(hOwner1.address, 1, ethers.utils.parseEther("100000"), 13, 31, 1234, 5678);
-                await mintHouseTx.wait();
-                
-                await (await Pool.addInspector(31, inspector1.address));
-                await (await Pool.addInspector(31, inspector2.address));
-                await (await Pool.addInspector(31, inspector3.address));
-
                 await (await Pool.connect(hOwner1).enterPool(1)).wait();
-
-                await expect(Pool.connect(hOwner1).makeClaimRequest(1)).to.be.reverted;
-
-            });
-            it("shouldn't let home owner make double claim request", async function (){
-                const mintHouseTx = await DeedNFT.safeMint(hOwner1.address, 1, ethers.utils.parseEther("100000"), 13, 31, 1234, 5678);
-                await mintHouseTx.wait();
-                
-                await (await Pool.addInspector(31, inspector1.address));
-                await (await Pool.addInspector(31, inspector2.address));
-                await (await Pool.addInspector(31, inspector3.address));
-
-                await (await Pool.connect(hOwner1).enterPool(1)).wait();
-
-                await (await Pool.connect(hOwner1).makeClaimRequest(1)).wait();
 
                 await expect(Pool.connect(hOwner1).makeClaimRequest(1)).to.be.reverted;
 
             });
 
             it("shouldn't let inspectors vote", async function (){
+                await (await Pool.connect(hOwner1).enterPool(1)).wait();
 
+                await expect(Pool.connect(inspector1).voteClaimRequest(1, true, 31)).to.be.reverted;
             });
 
-            it("shouldn't let house owners claim.", async function () {
+            it("shouldn't let house owners claim 'reward'.", async function () {
+                await (await Pool.connect(hOwner1).enterPool(1)).wait();
 
+                await expect(Pool.connect(hOwner1).claimAsHouseOwner(1)).to.be.reverted;
             });
 
             it("shouldn't let investors buy pool tokens", async function (){
-
+                await expect(Pool.connect(investor1).buyPoolPartially(10)).to.be.reverted;
             });
 
             it("shouldn't let investors claim", async function (){
-
+                await expect(Pool.connect(investor1).claimAsInsurer()).to.be.reverted;
             });
 
             it("should let owner make contract go to next period for demo purposes.", async function(){
@@ -165,18 +132,25 @@ describe("Pool Contract", function (){
         });
 
         describe("house owners claim", function () {
+            it("shouldn't let houses out of zipcode.", async function () {
 
+            });
+
+            it("shouldn't let home owner make double claim request", async function (){
+                
+
+            });
         });
 
         describe("pool ends", function() {
 
         });
 
-        describe("house owners claiming", function (){
+        describe("house owners claiming 'rewards'", function (){
 
         });
 
-        describe("investors claiming", function () {
+        describe("investors claiming 'rewards'", function () {
 
         });
 
