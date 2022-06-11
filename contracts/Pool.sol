@@ -6,6 +6,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
+import "hardhat/console.sol";
 import "./DeedNFT.sol";
 import "./Stake.sol";
 import "./PoolToken.sol";
@@ -218,7 +219,7 @@ contract Pool is Ownable {
         );
         //totalAmountRegistered -= nftCtc.getPrice(houseId); // why the fuck we are removing it?
         claimRequests[houseId].status = RequestStatus.CLAIMED;
-        stableToken.transferFrom(address(this), msg.sender, claimable);
+        stableToken.transfer(msg.sender, claimable);
         //housesInPool[houseId] = false; // why the fuck we are removing house from pool?
     }
 
@@ -239,9 +240,13 @@ contract Pool is Ownable {
         require(canBuyTokens, "Cannot buy pool tokens yet!");
         require(percentage + soldPercentage <= 100, "Too much percentage");
         uint256 collateralPercentage = calculateCollateralAmount(); // returns 70
+        // console.log(collateralPercentage);
+        // console.log(totalPoolBalance);
         uint256 amountToTransfer = totalPoolBalance * collateralPercentage * percentage / 10000; // 100_000000 * 70 * 50 / 10000 = 35_000000 -> 35
+        // console.log(amountToTransfer);
+        // console.log("sold perc.", soldPercentage);
         stableToken.transferFrom(msg.sender, address(this), amountToTransfer);
-        tokenCtc.transfer(msg.sender, percentage * 10 ** 18);
+        tokenCtc.transfer(msg.sender, percentage);
         soldPercentage += percentage;
     }
 
@@ -278,11 +283,13 @@ contract Pool is Ownable {
     }
 
     function endInsurancePeriod() external onlyOwner{ // claim period for pool is started
+        console.log("here");
         require( 
             block.timestamp - tokenSaleStart >= 365 days,
             "Insurance period hasnt ended yet"
         );
         canClaim = true;
+        console.log(canClaim);
         canBuyTokens = false;
         amountAtTheEnd = stableToken.balanceOf(address(this));
     }
@@ -304,6 +311,10 @@ contract Pool is Ownable {
 
     function demoEndInsurancePeriod() external onlyOwner {
         tokenSaleStart -= 400 days;
+    }
+
+    function getPoolTokenAddress() public view returns(address){
+        return address(tokenCtc);
     }
 
 }

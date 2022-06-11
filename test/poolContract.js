@@ -1,4 +1,3 @@
-const { getContractFactory } = require("@nomiclabs/hardhat-ethers/types");
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
 
@@ -17,7 +16,7 @@ describe("Pool Contract", function (){
         DeedNFT = await (await ethers.getContractFactory("DeedNFT")).deploy();
         await DeedNFT.deployed();
 
-        StableCoin = await (await ethers.getContractFactory("ERC20Token")).deploy();
+        StableCoin = await (await ethers.getContractFactory("StableCoin")).deploy();
         await StableCoin.deployed();
 
         DeinsuranceToken = await (await ethers.getContractFactory("DeinsuranceToken")).deploy();
@@ -55,7 +54,7 @@ describe("Pool Contract", function (){
     describe("Workflow", function () {
 
         beforeEach(async function () {
-            await (await StableCoin.mint(ethers.utils.parseEther("1000000000000000"))).wait();
+            // await (await StableCoin.mint(ethers.utils.parseEther("1000000000000000"))).wait();
             await (await StableCoin.transfer(hOwner1.address, ethers.utils.parseEther("1000000"))).wait();
             await (await StableCoin.transfer(hOwner2.address, ethers.utils.parseEther("1000000"))).wait();
             await (await StableCoin.transfer(inspector1.address, ethers.utils.parseEther("1000000"))).wait();
@@ -64,17 +63,17 @@ describe("Pool Contract", function (){
             await (await StableCoin.transfer(investor1.address, ethers.utils.parseEther("1000000"))).wait();
             await (await StableCoin.transfer(investor2.address, ethers.utils.parseEther("1000000"))).wait();
 
-            await (await DeinsuranceToken.transfer(Staking.address, ethers.utils.parseEther("970000")));
+            await (await DeinsuranceToken.transfer(Staking.address, ethers.utils.parseEther("97000")));
 
-            await (await DeinsuranceToken.transfer(inspector1.address, ethers.utils.parseEther("10000")));
-            await (await DeinsuranceToken.transfer(inspector2.address, ethers.utils.parseEther("10000")));
-            await (await DeinsuranceToken.transfer(inspector3.address, ethers.utils.parseEther("10000")));
+            await (await DeinsuranceToken.transfer(inspector1.address, ethers.utils.parseEther("1000")));
+            await (await DeinsuranceToken.transfer(inspector2.address, ethers.utils.parseEther("1000")));
+            await (await DeinsuranceToken.transfer(inspector3.address, ethers.utils.parseEther("1000")));
 
 
 
-            await (await Staking.connect(inspector1).stake(ethers.utils.parseEther("10000")));
-            await (await Staking.connect(inspector2).stake(ethers.utils.parseEther("10000")));
-            await (await Staking.connect(inspector3).stake(ethers.utils.parseEther("10000")));
+            await (await Staking.connect(inspector1).stake(ethers.utils.parseEther("1000")));
+            await (await Staking.connect(inspector2).stake(ethers.utils.parseEther("1000")));
+            await (await Staking.connect(inspector3).stake(ethers.utils.parseEther("1000")));
 
 
             const mintHouseTx = await DeedNFT.safeMint(hOwner1.address, 1, ethers.utils.parseEther("100000"), 13, 31, 1234, 5678);
@@ -254,11 +253,7 @@ describe("Pool Contract", function (){
                 await (await Pool.connect(inspector3).voteClaimRequest(2, false)).wait();
 
                 await (await Pool.demoEndInsurancePeriod()).wait();
-                await (await Pool.endInsurance()).wait();
-
-                await (await PoolToken.connect(investor1).approve(Pool.address, ethers.utils.parseEther("100"))).wait();
-                await (await PoolToken.connect(investor2).approve(Pool.address, ethers.utils.parseEther("100"))).wait();
-
+                await (await Pool.endInsurancePeriod()).wait();
 
 
             });
@@ -274,19 +269,29 @@ describe("Pool Contract", function (){
                     await expect(Pool.connect(hOwner2).claimAsHouseOwner(2)).to.be.reverted;
                     expect(await StableCoin.balanceOf(hOwner1.address)).to.be.equal(beforeBalance);
                 });
-            });
-    
-            describe("investors claiming 'rewards'", function () {
-                it("should let investor claim after houses all claimed", async function () {
+
+                
+                it("should let investor claim after house owners all claimed", async function () {
+                    
                     await expect(Pool.connect(investor1).claimAsInsurer()).to.be.reverted;
 
                     await (await Pool.connect(hOwner1).claimAsHouseOwner(1)).wait();
+                    await (await Pool.demoEndPoolEntrance()).wait();
+                    await (await Pool.endClaimPeriod()).wait();
+
+
+                    await (await PoolToken.connect(investor1).approve(Pool.address, ethers.utils.parseEther("100"))).wait();
+                    await (await PoolToken.connect(investor2).approve(Pool.address, ethers.utils.parseEther("100"))).wait();
 
                     await expect(Pool.connect(investor1).claimAsInsurer()).not.to.be.reverted;
                 });
-
+    
+                
             });
+    
+            
         });
+
     });
 
 
