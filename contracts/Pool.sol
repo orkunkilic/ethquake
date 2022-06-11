@@ -79,13 +79,18 @@ contract Pool is Ownable {
     }
 
     function enterPool(uint256 houseId) external {
+<<<<<<< HEAD
         require(canEnterPool(houseId));
+=======
+        require(canEnterPool(houseId), "Can't enter the pool");
+>>>>>>> 2efd4062829296524de87d2d90b19b8a7a810b39
         uint256 enteranceFee = calcEntranceFee(houseId);
         stableToken.transferFrom(msg.sender, address(this), enteranceFee);
         totalAmountRegistered += nftCtc.getPrice(houseId);
         housesInPool[houseId] = true;
     }
 
+<<<<<<< HEAD
 <<<<<<< HEAD
     function canEnterPool(uint256 houseId) internal returns(bool){
         require((block.timestamp - startTime) <= 30 days, "Insurance period has ended");
@@ -108,6 +113,19 @@ contract Pool is Ownable {
         );
         uint8 houseRisk = nftCtc.getRisk(houseId);
         uint256 housePrice = nftCtc.getPrice(houseId);
+=======
+    function canEnterPool(uint256 houseId) internal returns (bool) {
+        require(
+            (block.timestamp - startTime) <= 30 days,
+            "Insurance period has ended"
+        );
+        require(
+            msg.sender == nftCtc.ownerOfHouse(houseId),
+            "You are not the owner of this house"
+        );
+        uint8 houseRisk = nftCtc.getRisk(houseId);
+        uint256 housePrice = nftCtc.getPrice(houseId);
+>>>>>>> 2efd4062829296524de87d2d90b19b8a7a810b39
         uint8 noOfInspectors = uint8(
             zipCodeToInspectors[nftCtc.getZipcode(houseId)].length
         );
@@ -116,7 +134,10 @@ contract Pool is Ownable {
             houseRisk >= minPoolRisk && houseRisk <= maxPoolRisk,
             "House risk out of pool's boundaries"
         );
+<<<<<<< HEAD
 >>>>>>> 176903ab7a549419fb554b4c962c5c61a0556db2
+=======
+>>>>>>> 2efd4062829296524de87d2d90b19b8a7a810b39
         return true;
     }
 
@@ -132,7 +153,11 @@ contract Pool is Ownable {
             claimRequests[houseId].houseId == 0,
             "Already has claim request!"
         );
+<<<<<<< HEAD
         address houseOwner = nftCtc.ownerOf(houseId);
+=======
+        address houseOwner = nftCtc.ownerOfHouse(houseId);
+>>>>>>> 2efd4062829296524de87d2d90b19b8a7a810b39
         require(
             houseOwner == msg.sender,
             "You are not the owner of this house"
@@ -165,12 +190,17 @@ contract Pool is Ownable {
             cr.denyVotes++;
         }
 <<<<<<< HEAD
+<<<<<<< HEAD
         if(cr.grantVotes + cr.denyVotes == 3){
             if(cr.grantVotes > cr.denyVotes){
 =======
         if (cr.grantVotes + cr.denyVotes == inspectorPerCity) {
             if (cr.grantVotes > cr.denyVotes) {
 >>>>>>> 176903ab7a549419fb554b4c962c5c61a0556db2
+=======
+        if (cr.grantVotes + cr.denyVotes == inspectorPerCity) {
+            if (cr.grantVotes > cr.denyVotes) {
+>>>>>>> 2efd4062829296524de87d2d90b19b8a7a810b39
                 cr.status = RequestStatus.GRANTED;
                 totalPriceHouseGranted += nftCtc.getPrice(cr.houseId);
                 remainingHousesGranted += 1;
@@ -182,6 +212,7 @@ contract Pool is Ownable {
             } else {
                 cr.status = RequestStatus.DENIED;
 <<<<<<< HEAD
+<<<<<<< HEAD
                 if(cr.grantVotes == 1){
                     stakeCtc.slash(cr.grantVoters[0]);
                     stakeCtc.rewardInspector(cr.denyVoters[0]);
@@ -190,6 +221,10 @@ contract Pool is Ownable {
                 if (cr.grantVotes == 1) {
                     stakeCtc.rewardInspector(cr.grantVoters[0]);
 >>>>>>> 176903ab7a549419fb554b4c962c5c61a0556db2
+=======
+                if (cr.grantVotes == 1) {
+                    stakeCtc.rewardInspector(cr.grantVoters[0]);
+>>>>>>> 2efd4062829296524de87d2d90b19b8a7a810b39
                 }
             }
             emit RequestVotingEnded(cr.grantVotes, cr.denyVotes);
@@ -203,24 +238,34 @@ contract Pool is Ownable {
     function claimAsHouseOwner(uint256 houseId) external {
         require(canClaim);
 <<<<<<< HEAD
+<<<<<<< HEAD
         require(block.timestamp - startBlockTime >= 365 days, "Can't claim yet");
         require(remainingHousesGranted > 0, "Houses can not be claimed anymore");
         require(msg.sender == nftCtc.ownerOf(houseId), "You are not the owner of the house");
         require(claimRequests[houseId].status == RequestStatus.GRANTED, "Your request hasn't been granted.");
 =======
+=======
+>>>>>>> 2efd4062829296524de87d2d90b19b8a7a810b39
         require(
             remainingHousesGranted > 0,
             "Houses can not be claimed anymore"
         );
         require(
+<<<<<<< HEAD
             msg.sender == nftCtc.ownerOf(houseId),
+=======
+            msg.sender == nftCtc.ownerOfHouse(houseId),
+>>>>>>> 2efd4062829296524de87d2d90b19b8a7a810b39
             "You are not the owner of the house"
         );
         require(
             claimRequests[houseId].status == RequestStatus.GRANTED,
             "Your request hasn't been granted."
         );
+<<<<<<< HEAD
 >>>>>>> 176903ab7a549419fb554b4c962c5c61a0556db2
+=======
+>>>>>>> 2efd4062829296524de87d2d90b19b8a7a810b39
         claimRequests[houseId].status = RequestStatus.CLAIMED;
 
         uint256 claimable = min(
@@ -240,13 +285,19 @@ contract Pool is Ownable {
     {
         address[] storage inspectors = zipCodeToInspectors[zipCode];
 <<<<<<< HEAD
+<<<<<<< HEAD
         require(inspectors.length < 3, "Inspector limit reached for the city");
 =======
+=======
+>>>>>>> 2efd4062829296524de87d2d90b19b8a7a810b39
         require(
             inspectors.length < inspectorPerCity,
             "Inspector limit reached for the city"
         );
+<<<<<<< HEAD
 >>>>>>> 176903ab7a549419fb554b4c962c5c61a0556db2
+=======
+>>>>>>> 2efd4062829296524de87d2d90b19b8a7a810b39
         inspectors.push(inspector);
     }
 
@@ -280,15 +331,22 @@ contract Pool is Ownable {
     }
 
 <<<<<<< HEAD
+<<<<<<< HEAD
     function calculateTokenPrice(uint8 percantage, uint256 initalPoolVolume) internal returns(uint256){
         return initialVolume * (percentage + (block.timestamp - tokenSaleStart / 30 days) * 4) / 100;
 =======
+=======
+>>>>>>> 2efd4062829296524de87d2d90b19b8a7a810b39
     function calculateTokenPrice(uint8 percantage, uint256 initalPoolVolume)
         internal
         returns (uint256)
     {
+<<<<<<< HEAD
         return 100;
 >>>>>>> 176903ab7a549419fb554b4c962c5c61a0556db2
+=======
+        return initialVolume * (percentage + 2 * (block.timestamp - tokenSaleStart)) / 100;
+>>>>>>> 2efd4062829296524de87d2d90b19b8a7a810b39
     }
 
     function startTokenSale() external {
@@ -309,4 +367,15 @@ contract Pool is Ownable {
         canClaim = true;
         canBuyTokens = false;
     }
+<<<<<<< HEAD
+=======
+
+    function demoEndPoolEntrance() external onlyOwner {
+        startTime -= 31 days;
+    }
+
+    function demoEndInsurancePeriod() external onlyOwner {
+        startTime -= 400 days;
+    }
+>>>>>>> 2efd4062829296524de87d2d90b19b8a7a810b39
 }

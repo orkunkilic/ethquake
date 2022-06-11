@@ -1,28 +1,41 @@
-require('dotenv').config();
-require("@nomiclabs/hardhat-solhint");
+require("dotenv").config();
+// require("@nomiclabs/hardhat-solhint");
+require("@nomiclabs/hardhat-waffle");
 
 /**
  * @type import('hardhat/config').HardhatUserConfig
  */
 module.exports = {
   solidity: {
-    version: "0.8.14",
-    settings: {
-      optimizer: {
-        enabled: true,
-        runs: 100,
+    compilers: [
+      {
+        version: "0.8.14",
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 100,
+          },
+          outputSelection: {
+            "*": {
+              "*": ["storageLayout"],
+            },
+          },
+        },
       },
-      outputSelection: {
-        "*": {
-          "*": ["storageLayout"]
+      {
+        version: "0.5.16",
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 100,
+          },
+          outputSelection: {
+            "*": {
+              "*": ["storageLayout"],
+            },
+          },
         }
-      }
-    },
+      },
+    ],
   },
-  networks: {
-    rinkeby: {
-      url: process.env.RINKEBY_API_URL,
-      accounts: [process.env.PRIVATE_KEY]
-    }
-  }
 };

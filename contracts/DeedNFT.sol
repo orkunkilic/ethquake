@@ -45,6 +45,10 @@ contract DeedNFT is ERC721Enumerable, AccessControl {
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _grantRole(STATE_ROLE, msg.sender);
         _grantRole(OWNER_ROLE, houseOwner);
+<<<<<<< HEAD
+=======
+        _tokenIdCounter.increment();
+>>>>>>> 2efd4062829296524de87d2d90b19b8a7a810b39
     }
 
     function getMetadata(uint256 tokenId_)
@@ -71,6 +75,14 @@ contract DeedNFT is ERC721Enumerable, AccessControl {
         return tokenIdToRealEstate[tokenIdByHouseId(houseId)].marketValue;
     }
 
+<<<<<<< HEAD
+=======
+    function ownerOfHouse(uint256 houseId) public view returns (address) {
+        uint256 tokenId = houseIdToTokenId[houseId];
+        return ownerOf(tokenId);
+    }
+
+>>>>>>> 2efd4062829296524de87d2d90b19b8a7a810b39
     function setMetadata(
         uint256 tokenId_,
         uint256 houseId,
@@ -113,6 +125,7 @@ contract DeedNFT is ERC721Enumerable, AccessControl {
             latitude,
             longitude
         );
+<<<<<<< HEAD
     }
 
     function tokenIdsByAddress(address addressToQuery)
@@ -144,6 +157,39 @@ contract DeedNFT is ERC721Enumerable, AccessControl {
         _transfer(from_, to_, tokenId);
     }
 
+=======
+    }
+
+    function tokenIdsByAddress(address addressToQuery)
+        public
+        view
+        returns (uint256[] memory)
+    {
+        uint256 balance_ = balanceOf(addressToQuery);
+        uint256[] memory tokenIds = new uint256[](balance_);
+        for (uint256 i = 0; i < balance_; i++) {
+            tokenIds[i] = tokenOfOwnerByIndex(addressToQuery, i);
+        }
+        return tokenIds;
+    }
+
+    function transferDeed(
+        uint256 tokenId,
+        address from_,
+        address to_,
+        bytes memory sigOfSender,
+        bytes memory sigOfReceiver
+    ) external onlyRole(STATE_ROLE) {
+        require(
+            from_ == recover(keccak256(abi.encodePacked(tokenId)), sigOfSender)
+        );
+        require(
+            to_ == recover(keccak256(abi.encodePacked(tokenId)), sigOfReceiver)
+        );
+        _transfer(from_, to_, tokenId);
+    }
+
+>>>>>>> 2efd4062829296524de87d2d90b19b8a7a810b39
     //hash is keccak256 hashed version of tokenId(as a string)
     function recover(bytes32 hash, bytes memory sig)
         public
