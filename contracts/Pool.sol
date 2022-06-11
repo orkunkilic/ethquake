@@ -278,4 +278,8 @@ contract Pool is Ownable {
         startTime -= 400 days;
     }
 
+    function getClaimReqByHouseId(uint256 houseId) external view returns(ClaimRequest memory) {
+        return claimRequests[houseId];
+    }
+
 }
