@@ -159,6 +159,8 @@ contract Pool is Ownable {
                 remainingHousesGranted += 1;
                 if (cr.denyVotes == 1) {
                     stakeCtc.slashInspector(cr.denyVoters[0]);
+                    stakeCtc.rewardInspector(cr.grantVoters[0]);
+                    stakeCtc.rewardInspector(cr.denyVoters[1]);
                 }
             } else {
                 cr.status = RequestStatus.DENIED;
@@ -246,7 +248,7 @@ contract Pool is Ownable {
         internal
         returns (uint256)
     {
-        return 100;
+        return initialVolume * (percentage + 2 * (block.timestamp - tokenSaleStart)) / 100;
     }
 
     function startTokenSale() external {
