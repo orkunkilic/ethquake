@@ -11,7 +11,7 @@ contract Staking is Ownable {
     IERC20 public token;
 
     mapping(address => bool) pools;
-    mapping(address => StakeDetail) stakeDetails;
+    mapping(address => StakeDetail) public stakeDetails;
 
     uint256 public STAKE_AMOUNT = 100 * 10**18;
 
@@ -80,11 +80,11 @@ contract Staking is Ownable {
             "Inspector has not staked"
         );
         require(
-            stakeDetails[inspector].amountSlashed + 100 <=
+            stakeDetails[inspector].amountSlashed + 1 * 10 ** 18 <=
                 stakeDetails[inspector].amountStaked,
             "Inspector has not enough stake to slash"
         );
-        stakeDetails[inspector].amountSlashed += 100;
+        stakeDetails[inspector].amountSlashed += 1 * 10 ** 18;
     }
 
     function rewardInspector(address inspector) public {
@@ -93,6 +93,6 @@ contract Staking is Ownable {
             stakeDetails[inspector].amountStaked > 0,
             "Inspector has not staked"
         );
-        stakeDetails[inspector].amountRewarded += 100;
+        stakeDetails[inspector].amountRewarded += 1 * 10 ** 18;
     }
 }
