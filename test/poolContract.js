@@ -182,15 +182,20 @@ describe("Pool Contract", function (){
                 });
 
                 it("can grant house if majority of inspectors vote ok", async function(){
+                    await (await Pool.connect(inspector1).voteClaimRequest(1, true)).wait();
+                    await (await Pool.connect(inspector2).voteClaimRequest(1, true)).wait();
+                    await (await Pool.connect(inspector3).voteClaimRequest(1, false)).wait();
+
+                    await expect(Pool.claimRequests[1].status).to.be.equal(Pool.RequestStatus.GRANTED);
 
                 });
 
                 it("can deny house if majorty of inspectors vote not ok", async function (){
+                    await (await Pool.connect(inspector1).voteClaimRequest(1, false)).wait();
+                    await (await Pool.connect(inspector2).voteClaimRequest(1, false)).wait();
+                    await (await Pool.connect(inspector3).voteClaimRequest(1, true)).wait();
 
-                });
-
-                it("shouldn't let vote for houses out of zipcode.", async function () {
-    
+                    await expect(Pool.claimRequests[1].status).to.be.equal(Pool.RequestStatus.DENIED);
                 });
             });
         });
