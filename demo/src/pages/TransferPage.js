@@ -3,7 +3,7 @@ import { ethers } from "ethers"
 import axios from "axios"
 import nftCtcData from "../abis/nft.json"
 
-const nftAddr = ""
+const nftAddr = "0x8FCe455CD57b54E691B2bE2698DDB3c2c232d39c"
 const provider = new ethers.providers.Web3Provider(window.ethereum)
 const signer = provider.getSigner()
 const nftCtc = new ethers.Contract(nftAddr, nftCtcData.abi, signer);
@@ -13,7 +13,7 @@ const TransferPage = () => {
     const [houses, setHouses] = useState([])
     const [isOwner, setIsOwner] = useState(false)
     const [receiverAddr, setReceiverAddr] = useState()
-    const [ownerAddr, setOwnerAddr] = useState()
+    const [tokIdToReeceive, setTokIdToReceive] = useState()
 
     useEffect(() => {
         const getOwnedHouses = async () => {
@@ -26,30 +26,46 @@ const TransferPage = () => {
                 housesArr.push(house);
             }
             setHouses(housesArr)
+            console.log("use effect")
         }
-        //getOwnedHouses
-    })
+        getOwnedHouses()
+    }, [])
 
-    const approveTranfer = async (id, zipCode, receiver) => {
+    const approveTranfer = async (tokenId, receiver) => {
+        const address = await signer.getAddress()
+        const signedMessage = await signer.signMessage(tokenId.toString());
         const res = await axios.post(
             "http://localhost:3001/nft/transfer",
             {
-                houseId: id,
-                zipCode: zipCode
+                address,
+                receiver,
+                tokenId,
+                signature: signedMessage,
             }
         )
         console.log(res)
     }
 
-    const approveReceivment = async (owner) => {
-
+    const approveReceivment = async (tokenId) => {
+        const address = await signer.getAddress()
+        const signedMessage = await signer.signMessage(tokenId.toString());
+        const res = await axios.post(
+            "http://localhost:3001/nft/transfer",
+            {
+                address,
+                tokenId,
+                signature: signedMessage,
+            }
+        )
+        console.log(res)
+        console.log(signedMessage)
     }
 
-    const renderHouseComp = (price, risk, zipCode, id) => {
-        return (<div>
+    const renderHouseComp = (price, risk, zipCode, id, idx) => {
+        return (<div key={idx}>
             <h3>House Price: {price}$</h3>
             <h3>House Risk: {risk}%</h3>
-            <button onClick={() => { approveTranfer(id, zipCode, receiverAddr) }}>
+            <button onClick={() => { approveTranfer(id, receiverAddr) }}>
                 Transfer House</button>
         </div>)
     }
@@ -59,15 +75,16 @@ const TransferPage = () => {
             onChange={(e) => { setReceiverAddr(e.target.value) }} />
         {
             houses.length > 0 ?
-                houses.map(h => renderHouseComp(h.marketValue, h.risk, h.zipCode, h.tokenId))
+                houses.map((h, idx) => renderHouseComp(h.marketValue.toString(),
+                    h.riskScore.toString(), h.zipCode.toString(), h.houseId.toNumber(), idx))
                 : <h1>Loading</h1>
         }
     </div>)
 
     const receiverComp = (<div>
-        <input type="text" placeholder="Receiver Address"
-            onChange={(e) => { setOwnerAddr(e.target.value) }} />
-        <button onClick={() => { approveReceivment(ownerAddr) }}>Approve Receivment</button>
+        <input placeholder="House Id to Receive" type="number"
+            onChange={(e) => { setTokIdToReceive(e.target.value) }} />
+        <button onClick={() => { approveReceivment(tokIdToReeceive) }}>Approve Receivment</button>
     </div>)
 
     return (
