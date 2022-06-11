@@ -160,7 +160,23 @@ describe("Pool Contract", function (){
 
         });
 
-        describe("investment period", function (){
+        describe("investments", function (){
+
+        });
+
+        describe("house owners claim", function () {
+
+        });
+
+        describe("pool ends", function() {
+
+        });
+
+        describe("house owners claiming", function (){
+
+        });
+
+        describe("investors claiming", function () {
 
         });
 
