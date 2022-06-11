@@ -3,7 +3,7 @@ import { ethers } from "ethers"
 //import data from "../abis/"
 import poolCtcData from "../abis/Pool.json"
 import nftCtcData from "../abis/DeedNFT.json"
-import tokenData from "../abis/token.json"
+import tokenData from "../abis/PoolToken.json"
 import stableData from "../abis/StableCoin.json"
 
 

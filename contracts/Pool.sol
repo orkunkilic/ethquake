@@ -318,7 +318,7 @@ contract Pool is Ownable {
     }
 
     function isInsurancePeriodOver() public view returns (bool){
-        return (block.timestamp - startTime) > 30 days;
+        return canClaim || canInsurerClaim;
     }
 
     function min(uint256 a, uint256 b) public pure returns (uint256) {

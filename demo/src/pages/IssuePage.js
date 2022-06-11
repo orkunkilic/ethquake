@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react"
 import { ethers } from "ethers"
 //import data from "../abis/"
-import nftCtcData from "../abis/nft.json"
+import nftCtcData from "../abis/DeedNFT.json"
 import { Button, Input, Text } from "@geist-ui/core"
 import axios from "axios"
 
