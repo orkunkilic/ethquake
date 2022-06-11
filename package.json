@@ -28,6 +28,7 @@
     "hardhat": "^2.9.9"
   },
   "dependencies": {
+    "@defi-wonderland/smock": "^2.0.7",
     "axios": "^0.27.2",
     "dotenv": "^16.0.1",
     "lowdb": "^3.0.0"
