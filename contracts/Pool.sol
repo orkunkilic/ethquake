@@ -92,7 +92,7 @@ contract Pool is Ownable {
             "Insurance period has ended"
         );
         require(
-            msg.sender == nftCtc.ownerOf(houseId),
+            msg.sender == nftCtc.ownerOfHouse(houseId),
             "You are not the owner of this house"
         );
         uint8 houseRisk = nftCtc.getRisk(houseId);
@@ -120,7 +120,7 @@ contract Pool is Ownable {
             claimRequests[houseId].houseId == 0,
             "Already has claim request!"
         );
-        address houseOwner = nftCtc.ownerOf(houseId);
+        address houseOwner = nftCtc.ownerOfHouse(houseId);
         require(
             houseOwner == msg.sender,
             "You are not the owner of this house"
@@ -181,7 +181,7 @@ contract Pool is Ownable {
             "Houses can not be claimed anymore"
         );
         require(
-            msg.sender == nftCtc.ownerOf(houseId),
+            msg.sender == nftCtc.ownerOfHouse(houseId),
             "You are not the owner of the house"
         );
         require(

@@ -71,6 +71,11 @@ contract DeedNFT is ERC721Enumerable, AccessControl {
         return tokenIdToRealEstate[tokenIdByHouseId(houseId)].marketValue;
     }
 
+    function ownerOfHouse(uint256 houseId) public view returns (address) {
+        uint256 tokenId = houseIdToTokenId[houseId];
+        return ownerOf(tokenId);
+    }
+
     function setMetadata(
         uint256 tokenId_,
         uint256 houseId,
