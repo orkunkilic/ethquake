@@ -3,7 +3,7 @@ const chai = require("chai");
 const { smock } = require('@defi-wonderland/smock');
 const { ethers } = require("hardhat");
 
-describe("Pool contract", function () {
+describe("Pool contract - integration", function () {
     chai.use(smock.matchers);
     
     let DeedNFT;

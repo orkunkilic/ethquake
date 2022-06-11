@@ -1,7 +1,7 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
 
-describe("Pool Contract", function (){
+describe("Pool contract - unit", function (){
     let cOwner, hOwner1, hOwner2, inspector1, inspector2, inspector3, investor1, investor2;
     let DeedNFT;
     let StableCoin;

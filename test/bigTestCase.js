@@ -3,7 +3,7 @@ const chai = require("chai");
 const { smock } = require('@defi-wonderland/smock');
 const { ethers } = require("hardhat");
 
-describe("Pool contract", function () {
+describe("Pool contract - big test case", function () {
     chai.use(smock.matchers);
     
     let DeedNFT;
@@ -108,9 +108,9 @@ describe("Pool contract", function () {
 
         for(let i = 0; i < willBeDamaged.length; i++){
             await pool.connect(willBeDamaged[i][0]).makeClaimRequest(willBeDamaged[i][1]);
-            await pool.connect(ins1).voteClaimRequest(willBeDamaged[i][1], true);
-            await pool.connect(ins2).voteClaimRequest(willBeDamaged[i][1], true);
-            await pool.connect(ins3).voteClaimRequest(willBeDamaged[i][1], true);
+            await pool.connect(ins1).voteForClaimRequest(willBeDamaged[i][1], true);
+            await pool.connect(ins2).voteForClaimRequest(willBeDamaged[i][1], true);
+            await pool.connect(ins3).voteForClaimRequest(willBeDamaged[i][1], true);
     
         }
 
@@ -124,7 +124,7 @@ describe("Pool contract", function () {
         // console.log(await staking.stakeDetails(ins2.address));
         // console.log(await staking.stakeDetails(ins3.address));
 
-        //await pool.connect(houseOwner).claimAsHouseOwner(1); // error as it is not ended yet!
+        //await pool.connect(houseOwner).claimFundsForHouseOwner(1); // error as it is not ended yet!
 
         await pool.provider.send("evm_increaseTime", [60 * 60 * 24 * 396]);
 
@@ -133,10 +133,10 @@ describe("Pool contract", function () {
         console.log("amountAtTheEnd", await pool.amountAtTheEnd());
         console.log("stableCoin.balanceOf(pool.address)", await stableCoin.balanceOf(pool.address));
         for(let i = 0; i < willBeDamaged.length; i++){
-            await pool.connect(willBeDamaged[i][0]).claimAsHouseOwner(willBeDamaged[i][1]);    
+            await pool.connect(willBeDamaged[i][0]).claimFundsForHouseOwner(willBeDamaged[i][1]);    
         }
 
-        // await pool.connect(houseOwner).claimAsHouseOwner(1); 
+        // await pool.connect(houseOwner).claimFundsForHouseOwner(1); 
 
         console.log(await stableCoin.balanceOf(pool.address));
         
