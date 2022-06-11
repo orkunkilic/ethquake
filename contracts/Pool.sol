@@ -7,12 +7,9 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "./DeedNFT.sol";
 import "./Stake.sol";
+import "./PoolToken.sol";
 
-contract PoolToken is ERC20 {
-    constructor() ERC20("Pool 1", "P1") {
-        _mint(msg.sender, 100);
-    }
-}
+
 
 contract Pool is Ownable {
     DeedNFT nftCtc;
@@ -215,16 +212,16 @@ contract Pool is Ownable {
     }
 
     // each amount represents 1 / 100
-    function buyPoolPartially(uint8 amount) external payable {
-        require(canBuyTokens);
-        uint256 price = calculateTokenPrice(amount, totalAmountRegistered);
+    function buyPoolPartially(uint8 amount) external {
+        require(canBuyTokens, "Cannot buy pool tokens yet!");
+        uint256 price = calculateTokenPrice(totalAmountRegistered);
         uint256 oldBalance = stableToken.balanceOf(address(this));
         stableToken.transferFrom(
             msg.sender,
             address(this),
             price * amount - oldBalance
         );
-        tokenCtc.transferFrom(address(tokenCtc), msg.sender, amount);
+        tokenCtc.transfer(msg.sender, amount);
     }
 
     function claimAsInsurer() external {
@@ -243,13 +240,15 @@ contract Pool is Ownable {
         stableToken.transferFrom(address(this), msg.sender, claimable);
     }
 
-    function calculateTokenPrice(uint8 percentage, uint256 initalPoolVolume)
-        internal view
+    function calculateTokenPrice(uint256 initalPoolVolume)
+        public view
         returns (uint256)
     {
-        return initalPoolVolume * 
-        (percentage + (2 * (block.timestamp - tokenSaleStart) / 30 days)) /
-        100;
+        return initalPoolVolume * (200 - (minPoolRisk + maxPoolRisk) / 2) / 100;
+    }
+
+    function getPoolTokenAddress() public view returns(address) {
+        return address(tokenCtc);
     }
 
     function startTokenSale() external {
