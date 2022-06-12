@@ -8,9 +8,9 @@ import stableData from "../abis/StableCoin.json"
 
 
 
-const poolAddr = "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9"
-const nftAddr = "0x5FbDB2315678afecb367f032d93F642f64180aa3"
-const stableAddr = "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512"
+const poolAddr = "0xF402AbC150B5B2ce32ACBE3d641DE761D0F45162"
+const nftAddr = "0xEDbA9FB31c8Ca1CeB7cE8d2444b929573B02b9E6"
+const stableAddr = "0xb9401ba58b9E180384A75e8afA06a09ac0B10d05"
 const tokenAddr = ""
 const provider = new ethers.providers.Web3Provider(window.ethereum)
 const signer = provider.getSigner()
@@ -25,6 +25,7 @@ const ClaimDamage = () => {
 
         const getOwnedHouses = async () => {
             let houses = []
+            await provider.send("eth_requestAccounts", []);
             const addr = await signer.getAddress()
             console.log("address = ", addr);
             // houses = await nftCtc.tokenIdsByAddress(addr)

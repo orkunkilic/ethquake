@@ -3,7 +3,7 @@ import { ethers } from "ethers"
 import axios from "axios"
 import nftCtcData from "../abis/DeedNFT.json"
 
-const nftAddr = "0xa513E6E4b8f2a923D98304ec87F64353C4D5C853"
+const nftAddr = "0xEDbA9FB31c8Ca1CeB7cE8d2444b929573B02b9E6"
 const provider = new ethers.providers.Web3Provider(window.ethereum);
 const signer = provider.getSigner()
 const nftCtc = new ethers.Contract(nftAddr, nftCtcData.abi, signer);
@@ -48,7 +48,7 @@ const TransferPage = () => {
         const address = await signer.getAddress()
         const signedMessage = await signer.signMessage(tokenId.toString());
         const res = await axios.post(
-            "http://localhost:3001/nft/transfer",
+            "https://deinsurance.herokuapp.com/nft/transfer",
             {
                 address,
                 receiver,
@@ -63,7 +63,7 @@ const TransferPage = () => {
         const address = await signer.getAddress()
         const signedMessage = await signer.signMessage(tokenId.toString());
         const res = await axios.post(
-            "http://localhost:3001/nft/transfer",
+            "https://deinsurance.herokuapp.com/nft/transfer",
             {
                 address,
                 tokenId,

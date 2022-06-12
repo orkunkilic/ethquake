@@ -21,7 +21,7 @@ function App() {
         <Button width="300px" mt={3} onClick={() => navigate('/insure')}>Insure your house</Button>
         <Button width="300px" mt={3} onClick={() => navigate('/issue')}>Issue Deed NFT</Button>
         <Button width="300px" mt={3} onClick={() => navigate('/transfer')}>Transfer Deed</Button>
-        <Button width="300px" mt={3} onClick={() => navigate('/time_skips')}>Time skips</Button>
+        {/* <Button width="300px" mt={3} onClick={() => navigate('/time_skips')}>Time skips</Button> */}
       </div>
     </GeistProvider>
   );

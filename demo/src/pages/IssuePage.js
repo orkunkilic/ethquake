@@ -35,7 +35,7 @@ const IssuePage = () => {
         console.log("Address = ",address);
         // console.log("Account:", await );
         const res = await axios.post(
-            "http://localhost:3001/nft/issue",
+            "https://deinsurance.herokuapp.com/nft/issue",
             {
                 houseId: addressId,
                 zipCode: zipCode,

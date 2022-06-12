@@ -1,13 +1,9 @@
+const { ethers } = require("hardhat");
+
 async function main() {
-    const [owner, addr1, addr2, addr3, addr4] = await ethers.getSigners();
+    const [owner, addr1, addr2, addr3] = await ethers.getSigners();
     // log addresses
     console.log("owner:", owner.address);
-    console.log("addr1:", addr1.address);
-    console.log("addr2:", addr2.address);
-    console.log("addr3:", addr3.address);
-    console.log("addr4:", addr4.address);
-
-
 
     const DeedNFTContract = await ethers.getContractFactory("DeedNFT");
     const DeedNft = await DeedNFTContract.deploy();
@@ -35,17 +31,17 @@ async function main() {
     const StakingContract = await ethers.getContractFactory("Staking");
     const Staking = await StakingContract.deploy(DeinsuranceToken.address);
     await Staking.deployed();
-
-    
     console.log(Staking.address, "Staking");
 
-
+    const APIConsumer = await ethers.getContractFactory("APIConsumer");
+    const apiConsumer = await APIConsumer.attach("0x7891C53B6d0661bdc3669a89fB7AC242f81FaFbD");
+    console.log("API Consumer ", apiConsumer.address)
 
     const PoolContract = await ethers.getContractFactory("Pool");
-    const Pool = await PoolContract.deploy(DeedNft.address, StableCoin.address, 10, 20, 10, 3, Staking.address);
+    const Pool = await PoolContract.deploy(DeedNft.address, 
+      StableCoin.address, 10, 20, 10, 3, Staking.address, apiConsumer.address);
     await Pool.deployed();
 
-    
     console.log(Pool.address, "Pool");
 
     // expect(await greeter.greet()).to.equal("Hello, world!");

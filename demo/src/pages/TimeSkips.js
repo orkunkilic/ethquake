@@ -31,7 +31,7 @@ const TimeSkips = () => {
         console.log("Address = ",address);
         // console.log("Account:", await );
         const res = await axios.get(
-            "http://localhost:3001/demo/demoEndPoolEntrance",
+            "https://deinsurance.herokuapp.com/demo/demoEndPoolEntrance",
             {
             }
         )
@@ -46,7 +46,7 @@ const TimeSkips = () => {
         console.log("Address = ",address);
         // console.log("Account:", await );
         const res = await axios.get(
-            "http://localhost:3001/demo/demoEndInsurancePeriod",
+            "https://deinsurance.herokuapp.com/demo/demoEndInsurancePeriod",
             {
             }
         )
