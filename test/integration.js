@@ -73,7 +73,9 @@ describe("Pool contract - integration", function () {
         //await pool.connect(houseOwner).makeClaimRequest(1); // error
 
         await pool.provider.send("evm_increaseTime", [60 * 60 * 24 * 31]);
+        await pool.endPoolRegistrationPeriod();
 
+        await pool.connect(houseOwner).preRequestCheckEarthQuake(1)
         await pool.connect(houseOwner).makeClaimRequest(1);
 
         console.log(await pool.connect(houseOwner).claimRequests(1));

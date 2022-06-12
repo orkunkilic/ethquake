@@ -3,6 +3,8 @@ pragma solidity ^0.8.0;
 
 import '@chainlink/contracts/src/v0.8/ChainlinkClient.sol';
 import '@chainlink/contracts/src/v0.8/ConfirmedOwner.sol';
+import "hardhat/console.sol";
+
 
 /**
  * Request testnet LINK and ETH here: https://faucets.chain.link/
@@ -44,7 +46,7 @@ contract APIConsumer is ChainlinkClient, ConfirmedOwner {
      * data, then multiply by 1000000000000000000 (to remove decimal places from data).
      */
     function requestEarthquakeData(string memory lat, string memory long) 
-    public returns (bytes32 requestId) {
+    public returns (bytes32) {
         string memory url = string(abi.encodePacked(
             "https://deinsurance.herokuapp.com/?", "latitude=",lat,"&","longitude=", long));
         Chainlink.Request memory req = buildChainlinkRequest(jobId, address(this), this.fulfill.selector);
@@ -66,8 +68,14 @@ contract APIConsumer is ChainlinkClient, ConfirmedOwner {
         req.add('path', 'status'); // Chainlink nodes 1.0.0 and later support this format
 
 
+        // if not testing this should be returned.
         // Sends the request
-        return sendChainlinkRequest(req, fee);
+        // return sendChainlinkRequest(req, fee);
+        
+        // for test purposes mock chainlinkresponse.
+        bytes32 reqId = keccak256(abi.encodePacked(lat, long));
+        testFulfill(reqId, true);
+        return reqId;
     }
 
     /**
@@ -83,15 +91,20 @@ contract APIConsumer is ChainlinkClient, ConfirmedOwner {
         }
     }
 
+    function testFulfill(bytes32 _requestId, bool _isEartquake) public {
+        isEarthquake = _isEartquake;
+        if(_isEartquake){
+            oracleCalls[_requestId] = 1;
+        }else {
+            oracleCalls[_requestId] = 2;
+        }
+    }
+
     /**
      * Allow withdraw of Link tokens from the contract
      */
     function withdrawLink() public onlyOwner {
         LinkTokenInterface link = LinkTokenInterface(chainlinkTokenAddress());
         require(link.transfer(msg.sender, link.balanceOf(address(this))), 'Unable to transfer');
-    }
-
-    function requestVolumeData(string memory lat, string memory long) public {
-        // wrote this function bc it was referenced in chainLinkMock.sol 
     }
 }

@@ -111,9 +111,13 @@ describe("Pool contract - big test case", function () {
 
         // await pool.connect(houseOwner).enterPool(3);
 
+        // await pool.connect(willBeDamaged[i][0]).preRequestCheckEarthQuake(willBeDamaged[i][1]);
         //await pool.connect(houseOwner).makeClaimRequest(1); // error
+        await pool.provider.send("evm_increaseTime", [60 * 60 * 24 * 31]);
+        await pool.endPoolRegistrationPeriod();
 
         for(let i = 0; i < willBeDamaged.length; i++){
+            await pool.connect(willBeDamaged[i][0]).preRequestCheckEarthQuake(willBeDamaged[i][1]);
             await pool.connect(willBeDamaged[i][0]).makeClaimRequest(willBeDamaged[i][1]);
             await pool.connect(ins1).voteForClaimRequest(willBeDamaged[i][1], true);
             await pool.connect(ins2).voteForClaimRequest(willBeDamaged[i][1], true);
@@ -121,6 +125,7 @@ describe("Pool contract - big test case", function () {
     
         }
 
+        // await pool.connect(willBeDamaged[i][0]).preRequestCheckEarthQuake(willBeDamaged[i][1]);
         // await pool.connect(houseOwner).makeClaimRequest(1);
 
         // console.log(await pool.connect(houseOwner).claimRequests(1));

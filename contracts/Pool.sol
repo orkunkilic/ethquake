@@ -152,19 +152,18 @@ contract Pool is Ownable {
         inspectors.push(inspector);
     }
 
-
-    function makeClaimRequest(uint256 tokenId) external {
+    function preRequestCheckEarthQuake(uint256 tokenId) external {
         require(housesInPool[tokenId], "House is not in pool");
         require(
             claimRequests[tokenId].tokenId == 0,
             "Already has claim request!"
         );
-        address houseOwner = nftCtc.ownerOfHouse(tokenId);
+      
         require(
-            houseOwner == msg.sender,
+             nftCtc.ownerOfHouse(tokenId) == msg.sender,
             "You are not the owner of this house"
         );
-        require(block.timestamp - startTime >= 30 days, "Insurance period has not started");
+        require(canBuyTokens, "Insurance period has not started"); // also signals time between pool reg. end and insurance end
         require(tokenIdsToRequestIds[tokenId] == 0, "You have already made a request");
 
         
@@ -174,14 +173,30 @@ contract Pool is Ownable {
         bytes32 requestId = consumer.requestEarthquakeData
             (uint256(latitude).toString(), uint256(longitude).toString());
         tokenIdsToRequestIds[tokenId] = requestId;
+    }
 
 
-        // === TODO: DECIDE WHAT TO DO ABOUT THIS ====
+    function makeClaimRequest(uint256 tokenId) external {
+        require(
+            nftCtc.ownerOfHouse(tokenId) == msg.sender,
+            "You are not the owner of this house"
+        ); 
+        require(
+            claimRequests[tokenId].tokenId == 0,
+            "Already has claim request!"
+        );
+        // all other checks have already been made in pre function.
+
+
+        bytes32 requestId = tokenIdsToRequestIds[tokenId];
+
+        require(requestId != 0, "preRequestCheckEarthQuake hasn't been called properly for tokenId.");
+
         uint256 status = consumer.oracleCalls(requestId);
-        require(status != 0, "Inspection hasn't ended yet");
-        require(status != 2, "Your house was not founded to be damaged");
-        require(status == 1);
-        // === TODO: CHANGE TESTS ACCORDINGLY ====
+
+        require(status != 0, "Didn't recieve earthquake info yet");
+        require(status != 2, "No earthquake in abouts of your house.");
+        require(status == 1); // may be unnecessary.
 
         ClaimRequest storage cr = claimRequests[tokenId];
         cr.tokenId = tokenId;
