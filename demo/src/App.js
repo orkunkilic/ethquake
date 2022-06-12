@@ -15,7 +15,7 @@ function App() {
         justifyContent: "center", 
         flexDirection: "column"
       }}>
-        <Text h1>De-Insurance</Text>
+        <Text h1>ETHQuake</Text>
         <Button width="300px" mt={3} onClick={() => navigate('/buy_tokens_of_pool')}>Buy tokens of pool</Button>
         <Button width="300px" mt={3} onClick={() => navigate('/claim_damage')}>Claim Damage in your house</Button>
         <Button width="300px" mt={3} onClick={() => navigate('/insure')}>Insure your house</Button>
