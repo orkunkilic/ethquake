@@ -11,7 +11,7 @@ contract Mock{
     }
 
     function getIsEarthquake(string memory lat, string memory long) external returns (bool){
-        consumer.requestVolumeData(lat, long);
+        consumer.requestEarthquakeData(lat, long);
         return consumer.isEarthquake();
     }
 

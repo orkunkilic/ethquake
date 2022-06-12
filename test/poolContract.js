@@ -9,9 +9,13 @@ describe("Pool contract - unit", function (){
     let Staking;
     let Pool;
     let PoolToken;
+    let APIConsumer;
 
     beforeEach(async function (){
         [cOwner, hOwner1, hOwner2, inspector1, inspector2, inspector3, investor1, investor2] = await ethers.getSigners();
+
+        APIConsumer = await (await ethers.getContractFactory("APIConsumer")).deploy();
+        await APIConsumer.deployed();
 
         DeedNFT = await (await ethers.getContractFactory("DeedNFT")).deploy();
         await DeedNFT.deployed();
@@ -26,7 +30,7 @@ describe("Pool contract - unit", function (){
         await Staking.deployed();
 
 
-        Pool = await (await ethers.getContractFactory("Pool")).deploy(DeedNFT.address, StableCoin.address, 10, 20, 10, 3, Staking.address);
+        Pool = await (await ethers.getContractFactory("Pool")).deploy(DeedNFT.address, StableCoin.address, 10, 20, 10, 3, Staking.address, APIConsumer.address);
         await Pool.deployed();
 
         await (await Staking.addPool(Pool.address)).wait();

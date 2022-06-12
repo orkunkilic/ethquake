@@ -12,6 +12,7 @@ describe("Pool contract - integration", function () {
     let Staking;
     let Pool;
     let PoolToken;
+    let APIConsumer;
 
     beforeEach(async function () {
         [owner, ins1, ins2, ins3, houseOwner, acc5, acc6, ...accs] = await ethers.getSigners();
@@ -22,12 +23,14 @@ describe("Pool contract - integration", function () {
         Staking = await smock.mock("Staking");
         Pool = await smock.mock("Pool");
         PoolToken = await smock.mock("PoolToken");
+        APIConsumer = await smock.mock("APIConsumer");
 
         deedNFT = await DeedNFT.deploy();
         stableCoin = await StableCoin.deploy();
         deinsuranceToken = await DeinsuranceToken.deploy();
         staking = await Staking.deploy(deinsuranceToken.address);
-        pool = await Pool.deploy(deedNFT.address, stableCoin.address, 20, 40, 100, 3, staking.address);
+        apiConsumer = await APIConsumer.deploy();
+        pool = await Pool.deploy(deedNFT.address, stableCoin.address, 20, 40, 100, 3, staking.address, apiConsumer.address);
 
         await stableCoin.mint(owner.address, ethers.utils.parseEther("100000"));
 

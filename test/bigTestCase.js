@@ -35,12 +35,14 @@ describe("Pool contract - big test case", function () {
         Staking = await smock.mock("Staking");
         Pool = await smock.mock("Pool");
         PoolToken = await smock.mock("PoolToken");
+        APIConsumer = await smock.mock("APIConsumer");
 
         deedNFT = await DeedNFT.deploy();
         stableCoin = await StableCoin.deploy();
         deinsuranceToken = await DeinsuranceToken.deploy();
         staking = await Staking.deploy(deinsuranceToken.address);
-        pool = await Pool.deploy(deedNFT.address, stableCoin.address, minPoolRisk, maxPoolRisk, 100, 3, staking.address);
+        apiConsumer = await APIConsumer.deploy();
+        pool = await Pool.deploy(deedNFT.address, stableCoin.address, minPoolRisk, maxPoolRisk, 100, 3, staking.address, apiConsumer.address);
 
 
 
