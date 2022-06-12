@@ -90,4 +90,8 @@ contract APIConsumer is ChainlinkClient, ConfirmedOwner {
         LinkTokenInterface link = LinkTokenInterface(chainlinkTokenAddress());
         require(link.transfer(msg.sender, link.balanceOf(address(this))), 'Unable to transfer');
     }
+
+    function requestVolumeData(string memory lat, string memory long) public {
+        // wrote this function bc it was referenced in chainLinkMock.sol 
+    }
 }
