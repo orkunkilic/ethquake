@@ -15,9 +15,15 @@ describe("Pool contract - big test case", function () {
     let minPoolRisk = 20, maxPoolRisk = 40;
     let numOfHouseholds = 100;
     let willBeDamaged = [];
+    
+
+    // await ethers.ethersnetwork.provider.send("evm_setNextBlockBaseFeePerGas", [
+    //     "0x2540be400", // 10 gwei
+    //   ]);
 
     beforeEach(async function () {
         [owner, ins1, ins2, ins3, houseOwner, acc5, acc6, ...accs] = await ethers.getSigners();
+        console.log(await owner.getBalance());
         //Get a provider
         provider = ethers.getDefaultProvider();
         // print lenght of accs
@@ -71,13 +77,13 @@ describe("Pool contract - big test case", function () {
             // Set provider for houseOwner
             houseOwner = houseOwner.connect(ethers.provider);
             // let houseOwner = wallet.address;
-            // console.log("HIIII");
+            // console.log("ö");
             await stableCoin.mint(houseOwner.address, ethers.utils.parseEther("100000"));
             // console.log("Hi2");
             await owner.sendTransaction({to: houseOwner.address, value: ethers.utils.parseEther("1")});
             // console.log("Hi3");
-            await stableCoin.connect(houseOwner).approve(pool.address, ethers.utils.parseEther("100000000000"));
-            // console.log("HIIII");
+            await stableCoin.connect(houseOwner).approve(pool.address, ethers.utils.parseEther("1000000000"));
+            // console.log("Höööö");
             await deedNFT.safeMint(houseOwner.address, 2222, 100_000_000000, 25, 34, 60, 70);
             // await stableCoin.connect(houseOwner).approve(pool.address, ethers.utils.parseEther("100000000000"));
             await pool.connect(houseOwner).enterPool(i);
@@ -87,7 +93,6 @@ describe("Pool contract - big test case", function () {
             if(random >= minPoolRisk && random <= maxPoolRisk){
                 willBeDamaged.push([houseOwner, i]);
             }
-
         }
         console.log("Length of damaged house list is ", willBeDamaged.length);
 

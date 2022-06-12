@@ -10,7 +10,7 @@ import "@openzeppelin/contracts/utils/Strings.sol";
 import "./DeedNFT.sol";
 import "./Stake.sol";
 import "./PoolToken.sol";
-
+import "./APIConsumer.sol";
 
 contract Pool is Ownable {
     using Strings for uint;
@@ -34,6 +34,8 @@ contract Pool is Ownable {
     uint256 public totalPriceHouseGranted;
     uint256 public remainingHousesGranted;
 
+    APIConsumer consumer;
+
     // There are four time periods
     // 1. Pool house registration
     // 2. 1 year
@@ -50,6 +52,7 @@ contract Pool is Ownable {
     mapping(uint256 => ClaimRequest) public claimRequests; // tokenId -> Claim Request
     mapping(uint256 => address[]) internal zipCodeToInspectors;
     mapping(uint256 => bool) public housesInPool;
+    mapping(uint256 => bytes32) public tokenIdsToRequestIds;
 
     event InvestedInPool(address insurer, uint8 percentage, uint256 amount);
     event RequestOpenedForVoting(uint256 tokenId);
@@ -81,7 +84,8 @@ contract Pool is Ownable {
         uint8 _maxPoolRisk,
         uint8 _entranceFeePerc,
         uint8 _inspectorPerCity,
-        Staking _stakeCtc
+        Staking _stakeCtc,
+        APIConsumer _consumer
     ) {
         nftCtc = _nftCtc;
         stableToken = _stableToken;
@@ -91,6 +95,7 @@ contract Pool is Ownable {
         inspectorPerCity = _inspectorPerCity;
         startTime = block.timestamp;
         stakeCtc = _stakeCtc;
+        consumer = _consumer;
     }
 
 
@@ -160,6 +165,16 @@ contract Pool is Ownable {
             "You are not the owner of this house"
         );
         require(block.timestamp - startTime >= 30 days, "Insurance period has not started");
+        require(tokenIdsToRequestIds[tokenId] == 0, "You have already made a request");
+
+        
+        
+        int256 latitude = nftCtc.getLatitude(tokenId);
+        int256 longitude = nftCtc.getLongitude(tokenId);
+        bytes32 requestId = consumer.requestEarthquakeData
+            (uint256(latitude).toString(), uint256(longitude).toString());
+        tokenIdsToRequestIds[tokenId] = requestId;
+
         ClaimRequest storage cr = claimRequests[tokenId];
         cr.tokenId = tokenId;
         cr.status = RequestStatus.UNDETERMINED;

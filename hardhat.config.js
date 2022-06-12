@@ -7,6 +7,12 @@ require('solidity-coverage')
  * @type import('hardhat/config').HardhatUserConfig
  */
 module.exports = {
+  networks:{
+    hardhat: {
+      gas: 1800000,
+      initialBaseFeePerGas: 7
+    },
+  },
   solidity: {
     compilers: [
       {
