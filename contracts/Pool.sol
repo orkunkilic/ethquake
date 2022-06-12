@@ -175,6 +175,14 @@ contract Pool is Ownable {
             (uint256(latitude).toString(), uint256(longitude).toString());
         tokenIdsToRequestIds[tokenId] = requestId;
 
+
+        // === TODO: DECIDE WHAT TO DO ABOUT THIS ====
+        uint256 status = consumer.oracleCalls(requestId);
+        require(status != 0, "Inspection hasn't ended yet");
+        require(status != 2, "Your house was not founded to be damaged");
+        require(status == 1);
+        // === TODO: CHANGE TESTS ACCORDINGLY ====
+
         ClaimRequest storage cr = claimRequests[tokenId];
         cr.tokenId = tokenId;
         cr.status = RequestStatus.UNDETERMINED;
