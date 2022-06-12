@@ -15,9 +15,15 @@ describe("Pool contract - big test case", function () {
     let minPoolRisk = 20, maxPoolRisk = 40;
     let numOfHouseholds = 100;
     let willBeDamaged = [];
+    
+
+    // await ethers.ethersnetwork.provider.send("evm_setNextBlockBaseFeePerGas", [
+    //     "0x2540be400", // 10 gwei
+    //   ]);
 
     beforeEach(async function () {
         [owner, ins1, ins2, ins3, houseOwner, acc5, acc6, ...accs] = await ethers.getSigners();
+        console.log(await owner.getBalance());
         //Get a provider
         provider = ethers.getDefaultProvider();
         // print lenght of accs
@@ -29,12 +35,14 @@ describe("Pool contract - big test case", function () {
         Staking = await smock.mock("Staking");
         Pool = await smock.mock("Pool");
         PoolToken = await smock.mock("PoolToken");
+        APIConsumer = await smock.mock("APIConsumer");
 
         deedNFT = await DeedNFT.deploy();
         stableCoin = await StableCoin.deploy();
         deinsuranceToken = await DeinsuranceToken.deploy();
         staking = await Staking.deploy(deinsuranceToken.address);
-        pool = await Pool.deploy(deedNFT.address, stableCoin.address, minPoolRisk, maxPoolRisk, 100, 3, staking.address);
+        apiConsumer = await APIConsumer.deploy();
+        pool = await Pool.deploy(deedNFT.address, stableCoin.address, minPoolRisk, maxPoolRisk, 100, 3, staking.address, apiConsumer.address);
 
 
 
@@ -71,13 +79,13 @@ describe("Pool contract - big test case", function () {
             // Set provider for houseOwner
             houseOwner = houseOwner.connect(ethers.provider);
             // let houseOwner = wallet.address;
-            // console.log("HIIII");
+            // console.log("ö");
             await stableCoin.mint(houseOwner.address, ethers.utils.parseEther("100000"));
             // console.log("Hi2");
             await owner.sendTransaction({to: houseOwner.address, value: ethers.utils.parseEther("1")});
             // console.log("Hi3");
-            await stableCoin.connect(houseOwner).approve(pool.address, ethers.utils.parseEther("100000000000"));
-            // console.log("HIIII");
+            await stableCoin.connect(houseOwner).approve(pool.address, ethers.utils.parseEther("1000000000"));
+            // console.log("Höööö");
             await deedNFT.safeMint(houseOwner.address, 2222, 100_000_000000, 25, 34, 60, 70);
             // await stableCoin.connect(houseOwner).approve(pool.address, ethers.utils.parseEther("100000000000"));
             await pool.connect(houseOwner).enterPool(i);
@@ -87,7 +95,6 @@ describe("Pool contract - big test case", function () {
             if(random >= minPoolRisk && random <= maxPoolRisk){
                 willBeDamaged.push([houseOwner, i]);
             }
-
         }
         console.log("Length of damaged house list is ", willBeDamaged.length);
 
@@ -104,9 +111,13 @@ describe("Pool contract - big test case", function () {
 
         // await pool.connect(houseOwner).enterPool(3);
 
+        // await pool.connect(willBeDamaged[i][0]).preRequestCheckEarthQuake(willBeDamaged[i][1]);
         //await pool.connect(houseOwner).makeClaimRequest(1); // error
+        await pool.provider.send("evm_increaseTime", [60 * 60 * 24 * 31]);
+        await pool.endPoolRegistrationPeriod();
 
         for(let i = 0; i < willBeDamaged.length; i++){
+            await pool.connect(willBeDamaged[i][0]).preRequestCheckEarthQuake(willBeDamaged[i][1]);
             await pool.connect(willBeDamaged[i][0]).makeClaimRequest(willBeDamaged[i][1]);
             await pool.connect(ins1).voteForClaimRequest(willBeDamaged[i][1], true);
             await pool.connect(ins2).voteForClaimRequest(willBeDamaged[i][1], true);
@@ -114,6 +125,7 @@ describe("Pool contract - big test case", function () {
     
         }
 
+        // await pool.connect(willBeDamaged[i][0]).preRequestCheckEarthQuake(willBeDamaged[i][1]);
         // await pool.connect(houseOwner).makeClaimRequest(1);
 
         // console.log(await pool.connect(houseOwner).claimRequests(1));

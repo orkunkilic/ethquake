@@ -9,9 +9,13 @@ describe("Pool contract - unit", function (){
     let Staking;
     let Pool;
     let PoolToken;
+    let APIConsumer;
 
     beforeEach(async function (){
         [cOwner, hOwner1, hOwner2, inspector1, inspector2, inspector3, investor1, investor2] = await ethers.getSigners();
+
+        APIConsumer = await (await ethers.getContractFactory("APIConsumer")).deploy();
+        await APIConsumer.deployed();
 
         DeedNFT = await (await ethers.getContractFactory("DeedNFT")).deploy();
         await DeedNFT.deployed();
@@ -26,7 +30,7 @@ describe("Pool contract - unit", function (){
         await Staking.deployed();
 
 
-        Pool = await (await ethers.getContractFactory("Pool")).deploy(DeedNFT.address, StableCoin.address, 10, 20, 10, 3, Staking.address);
+        Pool = await (await ethers.getContractFactory("Pool")).deploy(DeedNFT.address, StableCoin.address, 10, 20, 10, 3, Staking.address, APIConsumer.address);
         await Pool.deployed();
 
         await (await Staking.addPool(Pool.address)).wait();
@@ -123,6 +127,7 @@ describe("Pool contract - unit", function (){
             it("shouldn't let claims be made before pool enterance period closes", async function (){
                 await (await Pool.connect(hOwner1).enterPool(1)).wait();
 
+                await expect(Pool.connect(hOwner1).preRequestCheckEarthQuake(1)).to.be.reverted;
                 await expect(Pool.connect(hOwner1).makeClaimRequest(1)).to.be.reverted;
                 expect((await Pool.claimRequests(1)).tokenId).to.be.equal(0);
             });
@@ -201,6 +206,7 @@ describe("Pool contract - unit", function (){
 
             describe("house owners", function () {
                 it("can claim damages.", async function () {
+                    await (await Pool.connect(hOwner1).preRequestCheckEarthQuake(1)).wait();
                     await expect(Pool.connect(hOwner1).makeClaimRequest(1)).not.to.be.reverted;
                     
                     var claimReq = await Pool.claimRequests(1);
@@ -209,6 +215,7 @@ describe("Pool contract - unit", function (){
                 
                 
                 it("can't double claim damages.", async function (){
+                    await (await Pool.connect(hOwner1).preRequestCheckEarthQuake(1)).wait();
                     await (await Pool.connect(hOwner1).makeClaimRequest(1)).wait();
                     await expect( Pool.connect(hOwner1).makeClaimRequest(1)).to.be.revertedWith("Already has claim request!");
                 });
@@ -216,6 +223,7 @@ describe("Pool contract - unit", function (){
 
             describe("inspectors", function (){
                 beforeEach(async function (){
+                    await (await Pool.connect(hOwner1).preRequestCheckEarthQuake(1)).wait();
                     await (await Pool.connect(hOwner1).makeClaimRequest(1)).wait();
                 });
 
@@ -267,6 +275,8 @@ describe("Pool contract - unit", function (){
                 await (await Pool.connect(investor2).buyPoolTokens(50)).wait();
 
 
+                await (await Pool.connect(hOwner1).preRequestCheckEarthQuake(1)).wait();
+                await (await Pool.connect(hOwner2).preRequestCheckEarthQuake(2)).wait();
                 await (await Pool.connect(hOwner1).makeClaimRequest(1)).wait();
                 await (await Pool.connect(hOwner2).makeClaimRequest(2)).wait();
 
